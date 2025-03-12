@@ -30,6 +30,14 @@ resource "random_password" "secretkey" {
   special = false
 }
 
+resource "azurerm_resource_group" "rg" {
+  name                        = var.resource_group_name
+  location                    = var.location
+  tags = {
+    "Managed_By" = "Terraform-Cloud"
+  }
+}
+
 # Virtual network
 resource "azurerm_virtual_network" "virtual_network" {
   name                = "sw-virtual-network"
