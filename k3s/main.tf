@@ -7,6 +7,8 @@ module "main" {
   database_password       = var.database_password
   reportingpassword       = var.reportingpassword
 
+  database_user = var.database_user
+
   smtp_from     = var.smtp_from
   smtp_host     = var.smtp_host
   smtp_port     = var.smtp_port

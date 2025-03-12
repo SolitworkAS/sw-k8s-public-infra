@@ -71,6 +71,13 @@ variable "min_memory" {
   description = "minimum memory"
 }
 
+variable "database_user" {
+  description = "database admin user, must only contain lowercase letters and numbers"
+  validation {
+    condition     = can(regex("^[a-z0-9]+$", var.database_user))
+    error_message = "database_user must only contain lowercase letters and numbers"
+  }
+}
 
 variable "database_password" {
   description = "database admin password, must be at least 8 characters long"

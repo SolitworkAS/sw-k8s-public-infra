@@ -3,7 +3,7 @@ locals {
 }
 
 module "k3s" {
-  source = "../k3s"
+  source = "./k3s"
   ssh_public_key = var.ssh_public_key
   ssh_private_key = var.ssh_private_key
   customer = var.customer
@@ -17,8 +17,6 @@ module "k3s" {
   storage_account_name = var.storage_account_name
   database_user               = var.database_user
   database_password           = var.database_password
-  environment_db_password     = var.environment_db_password
-  environment_db_user         = var.environment_db_user
   keycloak_admin_user         = var.keycloak_admin_user
   keycloak_admin_password     = var.keycloak_admin_password
   keycloak_version = var.keycloak_version
@@ -31,7 +29,5 @@ module "k3s" {
   smtp_port     = var.smtp_port
   smtp_username = var.smtp_username
   smtp_password = var.smtp_password
-  keycloak_db_user = var.keycloak_db_user
-  keycloak_db_password = var.keycloak_db_password
-  
+  reportingpassword = var.reportingpassword
 }
