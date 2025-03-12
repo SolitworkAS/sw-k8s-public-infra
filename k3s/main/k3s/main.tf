@@ -2,9 +2,6 @@
 
 locals {
   storage = var.storage_account_name == "" ? "${var.customer}swstorage" : var.storage_account_name
-
-  # Database configuration
-  swdbserver                 = "${var.customer}-sw-db-server"
   
   # Keycloak configuration
   keycloak_name               = "keycloak"
@@ -14,19 +11,6 @@ locals {
   keycloak_client_id_esg          = "afc-esg"
   keycloak_client_id_vat          = "afc-vat"
   keycloak_image = "${var.container_registry}/images/environment/keycloak:${var.keycloak_version}"
-
-  # Queue configuration
-  rabbitmq_name               = "rabbitmq"
-  config_queue                = "vat-config-queue"
-  config_request_queue        = "vat-config-request-queue"
-  transaction_queue           = "vat-fintransaction-queue"
-  transaction_processed_queue = "vat-vattransaction-queue"
-  queue_chunk_size            = "10000"
-  config_timeout_minutes      = "5"
-
-  # Audit trail configuration
-  audit_trail_image = "${var.container_registry}/images/audit-trail/audit_logger_service:${var.audit_version}"
-  audit_log_mount_path = "/code/AuditLogs"
 
   prefix = var.self_hosted ? var.customer : "shared"
 }
@@ -290,207 +274,127 @@ resource "null_resource" "install_k9s" {
   }
 }
 
-resource "null_resource" "deploy_argocd_infrastructure" {
+resource "null_resource" "deploy_argocd_application" {
   depends_on = [
-    azurerm_linux_virtual_machine.virtual_machine_master,
-    azurerm_virtual_machine_extension.k3s_install,
     null_resource.install_argocd
   ]
 
-  # Create values.yaml file
-  provisioner "local-exec" {
-    command = <<-EOT
-      cat > values.yaml << 'EOF'
-global:
-  domain: "${var.domain}"
-  publicIp: "${azurerm_public_ip.public_ip.ip_address}"
-  container:
-    registry: "${var.container_registry}"
-    username: "${var.registry_username}"
-    password: "${var.registry_password}"
-    imagePullSecret: "registry-secret"
-
-environment-chart:
-  namespace: "environment"
-  domain: "${var.domain}"
-  
-  keycloak:
-    name: "${local.keycloak_name}"
-    image: "${local.keycloak_image}"
-    replicas: 1
-    containerPort: 8080
-    admin:
-      password: "${var.keycloak_admin_password}"
-    selfhosted: "${var.customer}"
-
-  postgres:
-    storageSize: "10Gi"
-    superUser: "postgres"
-    superUserPassword: "${var.postgres_password}"
-    defaultDatabase: "postgres"
-
-  minio:
-    bucket:
-      name: argo-workflows
-
-  argo-workflows:
-    namespaceOverride: "argo"
-    server:
-      service:
-        type: NodePort
-
-  publicIp: "${azurerm_public_ip.public_ip.ip_address}"
-
-customer-chart:
-  selfhosted: "${var.customer}"
-  namespace: "${var.customer}"
-  
-  keycloak:
-    adminUsername: "admin"
-    adminPassword: "${var.keycloak_admin_password}"
-    roles:
-      - "admin"
-      - "carbon"
-      - "organizer"
-      - "reporting"
-      - "respondent"
-      - "disclosure-manager"
-      - "disclosure-project-manager"
-    groups:
-      - "default"
-      - "admin"
-      - "carbon"
-      - "esg_organizer"
-      - "reporting"
-      - "esg_respondent"
-      - "disclosure_manager"
-      - "disclosure_project_manager"
-    clients:
-      - "${local.keycloak_client_id_vat}"
-      - "${local.keycloak_client_id_esg}"
-      - "${local.keycloak_client_id}"
-
-  defaultDomain: "${var.domain}"
-  
-  smtp:
-    host: "${var.smtp_host}"
-    port: "${var.smtp_port}"
-    from: "${var.smtp_from}"
-    username: "${var.smtp_username}"
-    password: "${var.smtp_password}"
-  
-  appAdmin:
-    email: "${var.admin_email}"
-    firstName: "${var.admin_first_name}"
-    lastName: "${var.admin_last_name}"
-    password: "${var.admin_password}"
-  
-  postgres:
-    dbUser: "${var.postgres_user}"
-    dbPassword: "${var.postgres_password}"
-
-da-chart:
-  registry:
-    server: "${var.container_registry}"
-    username: "${var.registry_username}"
-    password: "${var.registry_password}"
-  namespace: "da"
-  datype: "${var.self_hosted ? var.customer : "shared"}"
-EOF
-    EOT
-  }
-
-  # Create ArgoCD Application manifest
-  provisioner "local-exec" {
-    command = <<-EOT
-      cat > sw-application.yaml << 'EOF'
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: sw-private-chart
-  namespace: argocd
-spec:
-  project: default
-  source:
-    chart: sw-private-chart
-    repoURL: oci://${var.helm_registry}
-    targetRevision: 0.1.0
-    helm:
-      valueFiles:
-        - values.yaml
-      releaseName: sw-private
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: default
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - ServerSideApply=true
-EOF
-    EOT
-  }
-
-  # Upload files to VM and apply
   provisioner "remote-exec" {
     inline = [
-      "mkdir -p ~/argocd-deployment",
-    ]
+      "cat <<EOF > /tmp/argocd-app.yaml",
+      "apiVersion: argoproj.io/v1alpha1",
+      "kind: Application",
+      "metadata:",
+      "  name: initial-${var.customer}-app",
+      "  namespace: argocd",
+      "spec:",
+      "  project: default",
+      "  source:",
+      "    repoURL: \"oci://${var.container_registry}/charts/sw-private-chart\"",
+      "    targetRevision: \"0.1.2\"",
+      "    chart: \"sw-private-chart\"",
+      "    helm:",
+      "      values: |",
+      "        global:",
+      "          selfhosted: \"${var.customer}\"",
+      "          domain: \"${var.domain}\"",
+      "          publicIp: \"${azurerm_public_ip.public_ip.ip_address}\"",
+      "          container:",
+      "            registry: \"${var.container_registry}\"",
+      "            username: \"${var.container_registry_username}\"",
+      "            password: \"${var.container_registry_password}\"",
+      "            imagePullSecret: \"registry-secret\"",
 
-    connection {
-      type        = "ssh"
-      host        = azurerm_public_ip.public_ip.ip_address
-      user        = "azureuser"
-      private_key = var.ssh_private_key
-    }
-  }
+      "        environment-chart:",
+      "          namespace: \"environment\"",
+      "          domain: \"${var.domain}\"",
+      "          keycloak:",
+      "            name: \"keycloak\"",
+      "            image: \"${local.keycloak_image}\"",
+      "            version: \"latest\"",
+      "            replicas: 1",
+      "            containerPort: 8080",
+      "            admin:",
+      "              password: \"${var.keycloak_admin_password}\"",
 
-  # Copy files to VM
-  provisioner "file" {
-    source      = "values.yaml"
-    destination = "~/argocd-deployment/values.yaml"
+      "          postgres:",
+      "            storageSize: \"10Gi\"",
+      "            superUser: \"postgres\"",
+      "            superUserPassword: \"postgres\"",
+      "            defaultDatabase: \"postgres\"",
+      "          minio:",
+      "            bucket:",
+      "              name: \"argo-workflows\"",
 
-    connection {
-      type        = "ssh"
-      host        = azurerm_public_ip.public_ip.ip_address
-      user        = "azureuser"
-      private_key = var.ssh_private_key
-    }
-  }
+      "          argo-workflows:",
+      "            namespaceOverride: \"argo\"",
+      "            server:",
+      "              service:",
+      "                type: NodePort",
 
-  provisioner "file" {
-    source      = "sw-application.yaml"
-    destination = "~/argocd-deployment/sw-application.yaml"
+      "        customer-chart:",
+      "          namespace: \"${var.customer}\"",
+      "          keycloak:",
+      "            adminUsername: \"admin\"",
+      "            adminPassword: \"${var.keycloak_admin_password}\"",
+      "            roles:",
+      "              - \"admin\"",
+      "              - \"carbon\"",
+      "              - \"organizer\"",
+      "              - \"reporting\"",
+      "              - \"respondent\"",
+      "              - \"disclosure-manager\"",
+      "              - \"disclosure-project-manager\"",
+      "            groups:",
+      "              - \"default\"",
+      "              - \"admin\"",
+      "              - \"carbon\"",
+      "              - \"esg_organizer\"",
+      "              - \"reporting\"",
+      "              - \"esg_respondent\"",
+      "              - \"disclosure_manager\"",
+      "              - \"disclosure_project_manager\"",
+      "            clients:",
+      "              - \"afc-vat\"",
+      "              - \"afc-esg\"",
+      "              - \"afc-carbacc\"",
 
-    connection {
-      type        = "ssh"
-      host        = azurerm_public_ip.public_ip.ip_address
-      user        = "azureuser"
-      private_key = var.ssh_private_key
-    }
-  }
+      "          smtp:",
+      "            host: \"${var.smtp_host}\"",
+      "            port: \"${var.smtp_port}\"",
+      "            from: \"${var.smtp_from}\"",
+      "            username: \"${var.smtp_username}\"",
+      "            password: \"${var.smtp_password}\"",
 
-  # Configure registry auth and apply manifests
-  provisioner "remote-exec" {
-    inline = [
-      # Login to container registry
-      "echo '${var.registry_password}' | sudo docker login ${var.container_registry} --username ${var.registry_username} --password-stdin",
-      
-      # Login to helm registry
-      "echo '${var.registry_password}' | helm registry login ${var.helm_registry} --username ${var.registry_username} --password-stdin",
-      
-      # Create namespace if it doesn't exist
-      "kubectl create namespace default || true",
-      
-      # Create ConfigMap for values
-      "kubectl create configmap sw-values -n argocd --from-file=values.yaml=~/argocd-deployment/values.yaml -o yaml --dry-run=client | kubectl apply -f -",
-      
-      # Apply the ArgoCD Application
-      "kubectl apply -f ~/argocd-deployment/sw-application.yaml",
-      
-      # Wait for application to sync
-      "kubectl -n argocd wait --for=condition=Synced application/sw-private-chart --timeout=300s || true"
+      "          appAdmin:",
+      "            email: \"${var.app_admin_email}\"",
+      "            firstName: \"${var.app_admin_first_name}\"",
+      "            lastName: \"${var.app_admin_last_name}\"",
+      "            password: \"${var.app_admin_initial_password}\"",
+
+      "          postgres:",
+      "            dbUser: \"${var.database_user}\"",
+      "            dbPassword: \"${var.database_password}\"",
+
+      "        da-chart:",
+      "          namespace: \"da\"",
+      "          da:",
+      "            da_frontend_image: \"/images/da-service/da-frontend\"",
+      "            da_service_image: \"/images/da-service/da-service\"",
+      "            da_version: \"dev\"",
+
+      "  destination:",
+      "    server: \"https://kubernetes.default.svc\"",
+      "    namespace: \"${var.customer}\"",
+
+      "  syncPolicy:",
+      "    automated:",
+      "      prune: true",
+      "      selfHeal: true",
+      "EOF",
+
+      # Apply the ArgoCD Application YAML
+      "kubectl apply -f /tmp/argocd-app.yaml"
     ]
 
     connection {
@@ -503,7 +407,5 @@ EOF
 
   triggers = {
     always_run = "${timestamp()}"
-    values_sha = sha256(file("values.yaml"))
   }
 }
-

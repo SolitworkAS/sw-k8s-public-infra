@@ -16,6 +16,20 @@ variable "customer" {
   }
 }
 
+variable "self_hosted" {
+  description = "self hosted or not"
+  default = true
+}
+
+variable "resource_group_name" {
+  description = "name of the resource group, must only contain lowercase letters and numbers"
+  validation {
+    condition     = can(regex("^[a-z0-9]+$", var.resource_group_name))
+    error_message = "resource_group_name must only contain lowercase letters and numbers"
+  }
+  
+}
+
 variable "realm_name" {
   description = "The name of the realm in Keycloak. Defaults to the customer name if not specified."
   type        = string
@@ -34,6 +48,25 @@ variable "keycloak_version" {
 variable "domain" {
   default = "afcsoftware.com"
   description = "Star domain used by the proxy Eg. afcsoftware.com for customer1.afcsoftware.com"
+}
+
+# DATABASE VARIABLES
+
+variable "database_user" {
+  description = "database user, must only contain lowercase letters and numbers"
+  validation {
+    condition     = can(regex("^[a-z0-9]+$", var.database_user))
+    error_message = "database_user must only contain lowercase letters and numbers"
+  }
+}
+
+variable "database_password" {
+  description = "database password, must be at least 8 characters long"
+  sensitive   = true
+  validation {
+    condition     = can(regex("^.{8,}$", var.database_password))
+    error_message = "database_password must be at least 8 characters long"
+  }
 }
 
 # CONTAINER REGISTRY VARIABLES
@@ -69,16 +102,6 @@ variable "min_cpu" {
 variable "min_memory" {
   default     = "1Gi"
   description = "minimum memory"
-}
-
-
-variable "database_password" {
-  description = "database admin password, must be at least 8 characters long"
-  sensitive   = true
-  validation {
-    condition     = can(regex("^.{8,}$", var.database_password))
-    error_message = "dbpassword must be at least 8 characters long"
-  }
 }
 
 variable "reportingpassword" {

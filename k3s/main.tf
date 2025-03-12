@@ -3,11 +3,10 @@ module "main" {
 
   customer = var.customer
 
-  rabbitmq_password       = var.rabbitmq_password
   keycloak_admin_password = var.keycloak_admin_password
   database_password       = var.database_password
   reportingpassword       = var.reportingpassword
-  availability_zone       = var.availability_zone
+  resource_group_name     = var.resource_group_name
 
   smtp_from     = var.smtp_from
   smtp_host     = var.smtp_host
@@ -35,24 +34,11 @@ module "main" {
   database_sku     = var.database_sku
   database_storage = var.database_storage
 
-  carbacc_version = var.carbacc_version
-  esg_version     = var.esg_version
-  vat_version     = var.vat_version
+  da_version = var.da_version
   keycloak_version = var.keycloak_version
-  audit_version = var.audit_version
 
   min_replicas = var.min_replicas
   max_replicas = var.max_replicas
-
-  include_vat     = var.include_vat
-  include_esg     = var.include_esg
-  include_carbacc = var.include_carbacc
-
-  use_proxy = var.use_proxy
-  proxy_domain = var.proxy_domain
-  
-  posthogkey = var.posthogkey
-  posthoghost = var.posthoghost
 
   ssh_public_key = var.ssh_public_key
   ssh_private_key = var.ssh_private_key
