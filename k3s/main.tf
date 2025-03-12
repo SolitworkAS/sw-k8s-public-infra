@@ -1,12 +1,11 @@
 module "main" {
-  source = "./modules/main"
+  source = "./main"
 
   customer = var.customer
 
   keycloak_admin_password = var.keycloak_admin_password
   database_password       = var.database_password
   reportingpassword       = var.reportingpassword
-  resource_group_name     = var.resource_group_name
 
   smtp_from     = var.smtp_from
   smtp_host     = var.smtp_host
@@ -31,8 +30,6 @@ module "main" {
 
 
   location         = var.location
-  database_sku     = var.database_sku
-  database_storage = var.database_storage
 
   da_version = var.da_version
   keycloak_version = var.keycloak_version
