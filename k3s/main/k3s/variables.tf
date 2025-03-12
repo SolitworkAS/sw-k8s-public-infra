@@ -22,12 +22,11 @@ variable "self_hosted" {
 }
 
 variable "resource_group_name" {
-  description = "name of the resource group, must only contain lowercase letters and numbers"
+  description = "name of the resource group, must only contain lowercase letters, numbers and dashes"
   validation {
-    condition     = can(regex("^[a-z0-9]+$", var.resource_group_name))
-    error_message = "resource_group_name must only contain lowercase letters and numbers"
+    condition     = can(regex("^[a-z0-9-]+$", var.resource_group_name))
+    error_message = "ressource_group_name must only contain lowercase letters, numbers and dashes"
   }
-  
 }
 
 variable "realm_name" {
