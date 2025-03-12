@@ -44,6 +44,8 @@ resource "azurerm_virtual_network" "virtual_network" {
   address_space       = ["10.0.0.0/16"]
   location            = var.location
   resource_group_name = var.resource_group_name
+
+  depends_on = [azurerm_resource_group.rg]
 }
 
 # network security group
@@ -73,6 +75,8 @@ resource "azurerm_network_security_group" "network_security_group" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
+
+  depends_on = [azurerm_resource_group.rg]
 }
 
 resource "azurerm_subnet_network_security_group_association" "subnet_network_security_group_association" {
