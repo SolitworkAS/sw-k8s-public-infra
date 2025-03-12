@@ -256,6 +256,7 @@ resource "null_resource" "install_k9s" {
   provisioner "remote-exec" {
     inline = [
       # Install K9s
+      "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml",
       "wget https://github.com/derailed/k9s/releases/download/v0.32.5/k9s_linux_amd64.deb",
 
       # Ensure kubeconfig is readable
