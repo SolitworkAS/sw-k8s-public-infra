@@ -38,7 +38,7 @@ variable "realm_name" {
 
 variable "da_version" {
   description = "version of carbacc to deploy"
-  default = "latest"
+  default = "dev"
 }
 
 variable "keycloak_version" {
