@@ -287,9 +287,44 @@ resource "null_resource" "install_k9s" {
   }
 }
 
+resource "null_resource" "apply_argocd_repository" {
+  depends_on = [null_resource.install_argocd]
+
+  provisioner "remote-exec" {
+    inline = [
+      "cat <<EOF > /tmp/argocd-repository.yaml",
+      "apiVersion: argoproj.io/v1alpha1",
+      "kind: Repository",
+      "metadata:",
+      "  name: acr-helm-repo",
+      "spec:",
+      "  repo: \"https://${var.container_registry}/charts/sw-private-chart\"",
+      "  type: \"helm\"",
+      "  enableOCI: true",
+      "  username: \"${var.container_registry_username}\"",
+      "  password: \"${var.container_registry_password}\"",
+      "EOF",
+
+      # Apply the ArgoCD repository configuration
+      "kubectl apply -f /tmp/argocd-repository.yaml -n argocd"
+    ]
+
+    connection {
+      type        = "ssh"
+      host        = azurerm_public_ip.public_ip.ip_address
+      user        = "azureuser"
+      private_key = var.ssh_private_key
+    }
+  }
+
+  triggers = {
+    always_run = "${timestamp()}"
+  }
+}
+
 resource "null_resource" "deploy_argocd_application" {
   depends_on = [
-    null_resource.install_argocd
+    null_resource.install_argocd, apply_argocd_repository
   ]
 
   provisioner "remote-exec" {
@@ -303,7 +338,7 @@ resource "null_resource" "deploy_argocd_application" {
       "spec:",
       "  project: default",
       "  source:",
-      "    repoURL: \"oci://${var.container_registry}/charts/sw-private-chart\"",
+      "    repoURL: \"https://${var.container_registry}/charts/sw-private-chart\"",
       "    targetRevision: \"0.1.2\"",
       "    chart: \"sw-private-chart\"",
       "    helm:",
