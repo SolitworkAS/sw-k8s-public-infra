@@ -322,23 +322,28 @@ resource "null_resource" "helm_login" {
     always_run = "${timestamp()}"
   }
 }
-resource "null_resource" "apply_argocd_repository" {
+
+resource "null_resource" "apply_argocd_repository_secret" {
   depends_on = [null_resource.install_argocd]
 
   provisioner "remote-exec" {
     inline = [
-      "cat <<EOF > /tmp/argocd-repository.yaml",
-      "apiVersion: argoproj.io/v1alpha1",
-      "kind: Repository",
+      "cat <<EOF > /tmp/argocd-repository-secret.yaml",
+      "apiVersion: v1",
+      "kind: Secret",
       "metadata:",
       "  name: sw-public-chart",
-      "spec:",
-      "  repo: https://github.com/SolitworkAS/sw-k8s-public-infra.git",
-      "  type: git",
+      "  namespace: argocd",
+      "  labels:",
+      "    argocd.argoproj.io/secret-type: repository",
+      "stringData:",
+      "  url: https://github.com/SolitworkAS/sw-k8s-public-infra.git",
+      "  project: default",
+      "  insecure: \"true\"",  # Ignore TLS validity if needed
       "EOF",
 
-      # Apply the ArgoCD repository configuration
-      "kubectl apply -f /tmp/argocd-repository.yaml -n argocd"
+      # Apply the ArgoCD Secret configuration
+      "kubectl apply -f /tmp/argocd-repository-secret.yaml -n argocd"
     ]
 
     connection {
@@ -353,6 +358,7 @@ resource "null_resource" "apply_argocd_repository" {
     always_run = "${timestamp()}"
   }
 }
+
 
 resource "null_resource" "deploy_argocd_application" {
   depends_on = [
