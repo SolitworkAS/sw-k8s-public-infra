@@ -516,6 +516,8 @@ resource "null_resource" "deploy_argocd_application" {
       "    automated:",
       "      prune: true",
       "      selfHeal: true",
+      "    syncOptions:",
+      "    - ServerSideApply=true",
       "EOF",
 
       # Apply the ArgoCD Application YAML
