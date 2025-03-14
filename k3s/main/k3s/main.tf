@@ -359,10 +359,51 @@ resource "null_resource" "apply_argocd_repository_secret" {
   }
 }
 
+resource "null_resource" "private_chart_repository_secret" {
+  depends_on = [null_resource.install_argocd]
+
+  provisioner "remote-exec" {
+    inline = [
+      "cat <<EOF > /tmp/argocd-repository-secret.yaml",
+      "apiVersion: v1",
+      "kind: Secret",
+      "metadata:",
+      "  name: sw-private-chart",
+      "  namespace: argocd",
+      "  labels:",
+      "    argocd.argoproj.io/secret-type: repository",
+      "stringData:",
+      "  url: \"${var.container_registry}/charts/sw-private-chart\"", # Private Helm repo URL
+      "  name: \"sw-private-chart\"", # Reference name for the repository
+      "  type: \"helm\"",  # Set repository type
+      "  enableOCI: \"true\"",  # Enable OCI support
+      "  username: \"${var.container_registry_username}\"",
+      "  password: \"${var.container_registry_password}\"",
+      "  project: \"default\"",
+      "EOF",
+
+      # Apply the ArgoCD Secret configuration
+      "kubectl apply -f /tmp/argocd-repository-secret.yaml -n argocd"
+    ]
+
+    connection {
+      type        = "ssh"
+      host        = azurerm_public_ip.public_ip.ip_address
+      user        = "azureuser"
+      private_key = var.ssh_private_key
+    }
+  }
+
+  triggers = {
+    always_run = "${timestamp()}"
+  }
+}
+
+
 
 resource "null_resource" "deploy_argocd_application" {
   depends_on = [
-    null_resource.install_argocd, null_resource.apply_argocd_repository_secret
+    null_resource.install_argocd, null_resource.apply_argocd_repository_secret, private_chart_repository_secret
   ]
 
   provisioner "remote-exec" {
