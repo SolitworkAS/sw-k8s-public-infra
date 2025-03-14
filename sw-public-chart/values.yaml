@@ -1,0 +1,93 @@
+global:
+  selfhosted: "customera"
+  domain: "afcdemo.com"
+  publicIp: "public-ip"
+  container:
+    registry: "swimageregdev.azurecr.io"
+    username: "my-registry-user"
+    password: "supersecurepassword"
+    imagePullSecret: "registry-secret"
+    
+sw-private-chart:
+  environment-chart:
+
+    namespace: "environment"
+    domain: "afcdemo.com"
+
+    keycloak:
+      name: "keycloak"
+      image: "/images/environment/keycloak"
+      version: "latest"
+      replicas: 1
+      containerPort: 8080
+      admin:
+        password: "supersecurepassword"  
+
+    postgres:
+      storageSize: "10Gi"
+      superUser: "postgres"
+      superUserPassword: "securepassword"
+      defaultDatabase: "postgres"
+
+    minio:
+      bucket:
+        name: argo-workflows  
+
+    argo-workflows:
+      namespaceOverride: "argo"  
+      server:
+        service:
+          type: NodePort  
+
+
+  customer-chart:
+
+    namespace: "customera"
+    keycloak:
+      adminUsername: "admin"
+      adminPassword: "admin-password"
+      roles:
+        - "admin"
+        - "carbon"
+        - "organizer"
+        - "reporting"
+        - "respondent"
+        - "disclosure-manager"
+        - "disclosure-project-manager"
+      groups:
+        - "default"
+        - "admin"
+        - "carbon"
+        - "esg_organizer"
+        - "reporting"
+        - "esg_respondent"
+        - "disclosure_manager"
+        - "disclosure_project_manager"
+      clients:
+        - "afc-vat"
+        - "afc-esg"
+        - "afc-carbacc"
+
+    smtp:
+      host: "smtp.example.com"
+      port: "587"
+      from: "noreply@example.com"
+      username: "smtp-user"
+      password: "smtp-password"
+
+    appAdmin:
+      email: "admin@example.com"
+      firstName: "Admin"
+      lastName: "User"
+      password: "securepassword"
+
+    postgres:
+      dbUser: "dbuser"
+      dbPassword: "dbpassword"
+
+  da-chart:
+    namespace: "da"
+    da:
+      da_frontend_image: "/images/da-service/da-frontend"
+      da_service_image: "/images/da-service/da-service"
+      da_version: "dev"

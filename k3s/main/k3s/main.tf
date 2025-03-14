@@ -287,6 +287,41 @@ resource "null_resource" "install_k9s" {
   }
 }
 
+resource "null_resource" "helm_login" {
+  depends_on = [
+    azurerm_linux_virtual_machine.virtual_machine_master,
+    azurerm_virtual_machine_extension.k3s_install,
+    null_resource.install_helm
+  ]
+
+  provisioner "remote-exec" {
+    inline = [
+      # Install K9s
+      "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml",
+      "helm login --username ${var.container_registry_username} --password ${var.container_registry_password} ${var.container_registry}", 
+    ]
+
+    connection {
+      type        = "ssh"
+      host        = azurerm_public_ip.public_ip.ip_address
+      user        = "azureuser"
+      private_key = var.ssh_private_key
+    }
+  }
+
+  provisioner "local-exec" {
+    command = <<EOT
+      scp -i ${var.ssh_private_key} azureuser@${azurerm_public_ip.public_ip.ip_address}:/home/azureuser/kubeconfig.yaml ./kubeconfig.yaml
+      sed -i "s/127.0.0.1/${azurerm_public_ip.public_ip.ip_address}/g" ./kubeconfig.yaml
+      echo "Kubeconfig downloaded to ./kubeconfig.yaml. Use it with:"
+      echo "export KUBECONFIG=./kubeconfig.yaml"
+    EOT
+  }
+
+  triggers = {
+    always_run = "${timestamp()}"
+  }
+}
 resource "null_resource" "apply_argocd_repository" {
   depends_on = [null_resource.install_argocd]
 
@@ -296,13 +331,10 @@ resource "null_resource" "apply_argocd_repository" {
       "apiVersion: argoproj.io/v1alpha1",
       "kind: Repository",
       "metadata:",
-      "  name: acr-helm-repo",
+      "  name: sw-public-chart",
       "spec:",
-      "  repo: ${var.container_registry}/charts/sw-private-chart",
-      "  type: helm",
-      "  enableOCI: true",
-      "  username: \"${var.container_registry_username}\"",
-      "  password: \"${var.container_registry_password}\"",
+      "  repo: https://github.com/SolitworkAS/sw-k8s-public-infra.git",
+      "  type: git",
       "EOF",
 
       # Apply the ArgoCD repository configuration
@@ -338,9 +370,9 @@ resource "null_resource" "deploy_argocd_application" {
       "spec:",
       "  project: default",
       "  source:",
-      "    repoURL: \"${var.container_registry}/charts/sw-private-chart\"",
-      "    targetRevision: \"0.1.8\"",
-      "    chart: \"sw-private-chart\"",
+      "    repoURL: \"https://github.com/SolitworkAS/sw-k8s-public-infra\"",
+      "    targetRevision: \"0.1.0\"",
+      "    chart: \"sw-public-chart\"",
       "    helm:",
       "      values: |",
       "        global:",
@@ -352,84 +384,81 @@ resource "null_resource" "deploy_argocd_application" {
       "            username: \"${var.container_registry_username}\"",
       "            password: \"${var.container_registry_password}\"",
       "            imagePullSecret: \"registry-secret\"",
+      "        sw-private-chart:",
+      "         environment-chart:",
+      "           namespace: \"environment\"",
+      "           domain: \"${var.domain}\"",
+      "           keycloak:",
+      "             name: \"keycloak\"",
+      "             image: \"${local.keycloak_image}\"",
+      "             version: \"latest\"",
+      "             replicas: 1",
+      "             containerPort: 8080",
+      "             admin:",
+      "               password: \"${var.keycloak_admin_password}\"",
+      "           postgres:",
+      "             storageSize: \"10Gi\"",
+      "             superUser: \"postgres\"",
+      "             superUserPassword: \"postgres\"",
+      "             defaultDatabase: \"postgres\"",
+      "           minio:",
+      "             bucket:",
+      "               name: \"argo-workflows\"",
+      "           argo-workflows:",
+      "             namespaceOverride: \"argo\"",
+      "             server:",
+      "               service:",
+      "                 type: NodePort",
+      "         customer-chart:",
+      "           namespace: \"${var.customer}\"",
+      "           keycloak:",
+      "             adminUsername: \"admin\"",
+      "             adminPassword: \"${var.keycloak_admin_password}\"",
+      "             roles:",
+      "               - \"admin\"",
+      "               - \"carbon\"",
+      "               - \"organizer\"",
+      "               - \"reporting\"",
+      "               - \"respondent\"",
+      "               - \"disclosure-manager\"",
+      "               - \"disclosure-project-manager\"",
+      "             groups:",
+      "               - \"default\"",
+      "               - \"admin\"",
+      "               - \"carbon\"",
+      "               - \"esg_organizer\"",
+      "               - \"reporting\"",
+      "               - \"esg_respondent\"",
+      "               - \"disclosure_manager\"",
+      "               - \"disclosure_project_manager\"",
+      "             clients:",
+      "               - \"afc-vat\"",
+      "               - \"afc-esg\"",
+      "               - \"afc-carbacc\"",
 
-      "        environment-chart:",
-      "          namespace: \"environment\"",
-      "          domain: \"${var.domain}\"",
-      "          keycloak:",
-      "            name: \"keycloak\"",
-      "            image: \"${local.keycloak_image}\"",
-      "            version: \"latest\"",
-      "            replicas: 1",
-      "            containerPort: 8080",
-      "            admin:",
-      "              password: \"${var.keycloak_admin_password}\"",
+      "           smtp:",
+      "             host: \"${var.smtp_host}\"",
+      "             port: \"${var.smtp_port}\"",
+      "             from: \"${var.smtp_from}\"",
+      "             username: \"${var.smtp_username}\"",
+      "             password: \"${var.smtp_password}\"",
 
-      "          postgres:",
-      "            storageSize: \"10Gi\"",
-      "            superUser: \"postgres\"",
-      "            superUserPassword: \"postgres\"",
-      "            defaultDatabase: \"postgres\"",
-      "          minio:",
-      "            bucket:",
-      "              name: \"argo-workflows\"",
+      "           appAdmin:",
+      "             email: \"${var.app_admin_email}\"",
+      "             firstName: \"${var.app_admin_first_name}\"",
+      "             lastName: \"${var.app_admin_last_name}\"",
+      "             password: \"${var.app_admin_initial_password}\"",
 
-      "          argo-workflows:",
-      "            namespaceOverride: \"argo\"",
-      "            server:",
-      "              service:",
-      "                type: NodePort",
+      "           postgres:",
+      "             dbUser: \"${var.database_user}\"",
+      "             dbPassword: \"${var.database_password}\"",
 
-      "        customer-chart:",
-      "          namespace: \"${var.customer}\"",
-      "          keycloak:",
-      "            adminUsername: \"admin\"",
-      "            adminPassword: \"${var.keycloak_admin_password}\"",
-      "            roles:",
-      "              - \"admin\"",
-      "              - \"carbon\"",
-      "              - \"organizer\"",
-      "              - \"reporting\"",
-      "              - \"respondent\"",
-      "              - \"disclosure-manager\"",
-      "              - \"disclosure-project-manager\"",
-      "            groups:",
-      "              - \"default\"",
-      "              - \"admin\"",
-      "              - \"carbon\"",
-      "              - \"esg_organizer\"",
-      "              - \"reporting\"",
-      "              - \"esg_respondent\"",
-      "              - \"disclosure_manager\"",
-      "              - \"disclosure_project_manager\"",
-      "            clients:",
-      "              - \"afc-vat\"",
-      "              - \"afc-esg\"",
-      "              - \"afc-carbacc\"",
-
-      "          smtp:",
-      "            host: \"${var.smtp_host}\"",
-      "            port: \"${var.smtp_port}\"",
-      "            from: \"${var.smtp_from}\"",
-      "            username: \"${var.smtp_username}\"",
-      "            password: \"${var.smtp_password}\"",
-
-      "          appAdmin:",
-      "            email: \"${var.app_admin_email}\"",
-      "            firstName: \"${var.app_admin_first_name}\"",
-      "            lastName: \"${var.app_admin_last_name}\"",
-      "            password: \"${var.app_admin_initial_password}\"",
-
-      "          postgres:",
-      "            dbUser: \"${var.database_user}\"",
-      "            dbPassword: \"${var.database_password}\"",
-
-      "        da-chart:",
-      "          namespace: \"da\"",
-      "          da:",
-      "            da_frontend_image: \"images/da-service/da-frontend\"",
-      "            da_service_image: \"images/da-service/da-service\"",
-      "            da_version: \"${var.da_version}\"",
+      "         da-chart:",
+      "           namespace: \"da\"",
+      "           da:",
+      "             da_frontend_image: \"images/da-service/da-frontend\"",
+      "             da_service_image: \"images/da-service/da-service\"",
+      "             da_version: \"${var.da_version}\"",
 
       "  destination:",
       "    server: \"https://kubernetes.default.svc\"",
