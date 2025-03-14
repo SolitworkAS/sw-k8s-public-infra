@@ -519,7 +519,7 @@ resource "null_resource" "deploy_argocd_application" {
       "EOF",
 
       # Apply the ArgoCD Application YAML
-      "kubectl apply -f /tmp/argocd-app.yaml"
+      "kubectl apply --server-side -f /tmp/argocd-app.yaml"
     ]
 
     connection {
