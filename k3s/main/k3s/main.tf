@@ -10,7 +10,7 @@ locals {
   keycloak_client_id          = "afc-carbacc"
   keycloak_client_id_esg          = "afc-esg"
   keycloak_client_id_vat          = "afc-vat"
-  keycloak_image = "images/environment/keycloak:${var.keycloak_version}"
+  keycloak_image = "images/environment/keycloak"
 
   prefix = var.self_hosted ? var.customer : "shared"
 }
