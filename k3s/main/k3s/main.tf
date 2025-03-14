@@ -298,7 +298,7 @@ resource "null_resource" "helm_login" {
     inline = [
       # Install K9s
       "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml",
-      "helm login --username ${var.container_registry_username} --password ${var.container_registry_password} ${var.container_registry}", 
+      "helm registry login ${var.container_registry} -u ${var.container_registry_username} -p ${var.container_registry_password}", 
     ]
 
     connection {
@@ -366,12 +366,13 @@ resource "null_resource" "deploy_argocd_application" {
       "kind: Application",
       "metadata:",
       "  name: initial-${var.customer}-app",
+
       "  namespace: argocd",
       "spec:",
       "  project: default",
       "  source:",
       "    repoURL: \"https://github.com/SolitworkAS/sw-k8s-public-infra\"",
-      "    targetRevision: \"0.1.0\"",
+      "    targetRevision: \"HEADi\"",
       "    chart: \"sw-public-chart\"",
       "    helm:",
       "      values: |",
