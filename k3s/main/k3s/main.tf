@@ -325,7 +325,7 @@ resource "null_resource" "apply_argocd_repository" {
 
 resource "null_resource" "deploy_argocd_application" {
   depends_on = [
-    null_resource.install_argocd, apply_argocd_repository
+    null_resource.install_argocd, null_resource.apply_argocd_repository
   ]
 
   provisioner "remote-exec" {
