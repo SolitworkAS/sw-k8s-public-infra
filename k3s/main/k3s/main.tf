@@ -10,7 +10,7 @@ locals {
   keycloak_client_id          = "afc-carbacc"
   keycloak_client_id_esg          = "afc-esg"
   keycloak_client_id_vat          = "afc-vat"
-  keycloak_image = "${var.container_registry}/images/environment/keycloak:${var.keycloak_version}"
+  keycloak_image = "images/environment/keycloak:${var.keycloak_version}"
 
   prefix = var.self_hosted ? var.customer : "shared"
 }
@@ -298,8 +298,9 @@ resource "null_resource" "apply_argocd_repository" {
       "metadata:",
       "  name: acr-helm-repo",
       "spec:",
-      "  repo: \"https://${var.container_registry}/charts/sw-private-chart\"",
-      "  type: \"helm\"",
+      "  repo: ${var.container_registry}/charts/sw-private-chart",
+      "  type: helm",
+      "  name: acr-helm-repo",
       "  enableOCI: true",
       "  username: \"${var.container_registry_username}\"",
       "  password: \"${var.container_registry_password}\"",
@@ -338,8 +339,8 @@ resource "null_resource" "deploy_argocd_application" {
       "spec:",
       "  project: default",
       "  source:",
-      "    repoURL: \"https://${var.container_registry}/charts/sw-private-chart\"",
-      "    targetRevision: \"0.1.2\"",
+      "    repoURL: \"${var.container_registry}/charts/sw-private-chart\"",
+      "    targetRevision: \"0.1.8\"",
       "    chart: \"sw-private-chart\"",
       "    helm:",
       "      values: |",
@@ -427,8 +428,8 @@ resource "null_resource" "deploy_argocd_application" {
       "        da-chart:",
       "          namespace: \"da\"",
       "          da:",
-      "            da_frontend_image: \"/images/da-service/da-frontend\"",
-      "            da_service_image: \"/images/da-service/da-service\"",
+      "            da_frontend_image: \"images/da-service/da-frontend\"",
+      "            da_service_image: \"images/da-service/da-service\"",
       "            da_version: \"${var.da_version}\"",
 
       "  destination:",
