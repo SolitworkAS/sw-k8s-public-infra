@@ -364,7 +364,7 @@ resource "null_resource" "private_chart_repository_secret" {
 
   provisioner "remote-exec" {
     inline = [
-      "cat <<EOF > /tmp/argocd-repository-secret.yaml",
+      "cat <<EOF > /tmp/argocd-private-secret.yaml",
       "apiVersion: v1",
       "kind: Secret",
       "metadata:",
@@ -373,7 +373,7 @@ resource "null_resource" "private_chart_repository_secret" {
       "  labels:",
       "    argocd.argoproj.io/secret-type: repository",
       "stringData:",
-      "  url: \"${var.container_registry}/charts/sw-private-chart\"", # Private Helm repo URL
+      "  url: \"${var.container_registry}/charts\"", # Private Helm repo URL
       "  name: \"sw-private-chart\"", # Reference name for the repository
       "  type: \"helm\"",  # Set repository type
       "  enableOCI: \"true\"",  # Enable OCI support
@@ -383,7 +383,7 @@ resource "null_resource" "private_chart_repository_secret" {
       "EOF",
 
       # Apply the ArgoCD Secret configuration
-      "kubectl apply -f /tmp/argocd-repository-secret.yaml -n argocd"
+      "kubectl apply -f /tmp/argocd-private-secret.yaml -n argocd"
     ]
 
     connection {
