@@ -300,7 +300,6 @@ resource "null_resource" "apply_argocd_repository" {
       "spec:",
       "  repo: ${var.container_registry}/charts/sw-private-chart",
       "  type: helm",
-      "  name: acr-helm-repo",
       "  enableOCI: true",
       "  username: \"${var.container_registry_username}\"",
       "  password: \"${var.container_registry_password}\"",
