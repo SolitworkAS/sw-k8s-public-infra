@@ -41,4 +41,14 @@ module "main" {
 
   ssh_public_key = var.ssh_public_key
   ssh_private_key = var.ssh_private_key
+
+  customer_client_id = var.customer_client_id
+  customer_issuer = var.customer_issuer
+  customer_client_secret = var.customer_client_secret
+
+  client_secret = var.client_secret
+
+  keycloak_client_id = var.keycloak_client_id
+  keycloak_client_secret = var.keycloak_client_secret
+  keycloak_issuer = var.keycloak_issuer
 }
