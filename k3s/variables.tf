@@ -215,39 +215,14 @@ variable "ssh_private_key" {
   description = "ssh private key, must be a valid ssh private key"
 }
 
-variable "customer_issuer" {
-  description = "Issuer URL for the customer"
-  type        = string
-}
 
-variable "customer_client_id" {
-  description = "Client ID for the customer"
-  type        = string
-}
-
-variable "customer_client_secret" {
-  description = "Client secret for the customer"
+variable "github_client_id" {
+  description = "Client secret for github"
   type        = string
   sensitive   = true
 }
 
-variable "keycloak_issuer" {
-  description = "Issuer URL for Keycloak"
-  type        = string
-}
-
-variable "keycloak_client_id" {
-  description = "Client ID for Keycloak"
-  type        = string
-}
-
-variable "keycloak_client_secret" {
-  description = "Client secret for Keycloak"
-  type        = string
-  sensitive   = true
-}
-
-variable "client_secret" {
+variable "github_client_secret" {
   description = "Secret for the client"
   type        = string
   sensitive   = true
