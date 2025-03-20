@@ -33,4 +33,5 @@ module "k3s" {
 
   github_client_id = var.github_client_id
   github_client_secret = var.github_client_secret
+  client_secret = var.client_secret
 }

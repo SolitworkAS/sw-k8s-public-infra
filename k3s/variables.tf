@@ -215,7 +215,6 @@ variable "ssh_private_key" {
   description = "ssh private key, must be a valid ssh private key"
 }
 
-
 variable "github_client_id" {
   description = "Client secret for github"
   type        = string
@@ -223,6 +222,12 @@ variable "github_client_id" {
 }
 
 variable "github_client_secret" {
+  description = "Secret for the client"
+  type        = string
+  sensitive   = true
+}
+
+variable "client_secret" {
   description = "Secret for the client"
   type        = string
   sensitive   = true

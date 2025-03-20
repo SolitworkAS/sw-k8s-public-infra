@@ -243,3 +243,9 @@ variable "github_client_secret" {
   type        = string
   sensitive   = true
 }
+
+variable "client_secret" {
+  description = "Secret for the client"
+  type        = string
+  sensitive   = true
+}
