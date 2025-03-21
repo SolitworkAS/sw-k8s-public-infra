@@ -171,33 +171,6 @@ resource "azurerm_virtual_machine_extension" "k3s_install" {
   SETTINGS
 }
 
-
-resource "null_resource" "install_azure_file_csi" {
-  depends_on = [
-    azurerm_linux_virtual_machine.virtual_machine_master,
-    azurerm_virtual_machine_extension.k3s_install
-  ]
-
-  provisioner "remote-exec" {
-    inline = [
-      # Download & apply the official Azure File CSI driver v2 manifests
-      "curl -skSL https://raw.githubusercontent.com/kubernetes-sigs/azurefile-csi-driver/v1.31.2/deploy/install-driver.sh | bash -s v1.31.2 -- -o /tmp/install-driver-v2.yaml",
-      "kubectl apply -f /tmp/install-driver-v2.yaml",
-      # optional: wait a bit for driver pods to start
-      "sleep 10",
-      "kubectl -n kube-system rollout status ds/csi-azurefile-node --timeout=120s || true",
-      "kubectl -n kube-system rollout status deployment/csi-azurefile-controller --timeout=120s || true"
-    ]
-
-    connection {
-      type        = "ssh"
-      host        = azurerm_public_ip.public_ip.ip_address
-      user        = "azureuser"
-      private_key = var.ssh_private_key
-    }
-  }
-}
-
 resource "null_resource" "install_helm" {
   depends_on = [
     azurerm_linux_virtual_machine.virtual_machine_master,
