@@ -14,6 +14,21 @@ sw-private-chart:
     namespace: "environment"
     domain: "afcdemo.com"
 
+    dex:
+    connectors:
+      github:
+        enabled: false
+        clientID: "dex"
+        clientSecret: "supersecure"
+      solitwork:
+        enabled: false
+        clientID: ""
+        clientSecret: ""
+        issuer: ""
+        
+    client:
+      secret: "supersecure"
+
     keycloak:
       name: "keycloak"
       image: "/images/environment/keycloak"
