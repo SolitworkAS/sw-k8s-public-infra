@@ -213,6 +213,7 @@ variable "ssh_public_key" {
 
 variable "ssh_private_key" {
   description = "ssh private key, must be a valid ssh private key"
+  sensitive   = true
 }
 
 variable "github_client_id" {
