@@ -219,19 +219,21 @@ variable "github_client_id" {
   description = "Client secret for github"
   type        = string
   sensitive   = true
+  default     = "null"
 }
 
 variable "github_client_secret" {
   description = "Secret for the client"
   type        = string
   sensitive   = true
+  default     = "null"
 }
 
 variable "client_secret" {
   description = "Secret for the client"
   type        = string
   sensitive   = true
-  default     = null
+  default     = "null"
 }
 
 variable "enable_github_sso" {
@@ -247,19 +249,19 @@ variable "enable_sso" {
 variable "sso_issuer" {
   description = "Issuer for sso"
   type        = string
-  default     = null
+  default     = "null"
 }
 
 variable "sso_client_id" {
   description = "Client id for sso"
   type        = string
   sensitive   = true
-  default     = null
+  default     = "null"
 }
 
 variable "sso_client_secret" {
   description = "Client secret for sso"
   type        = string
   sensitive   = true
-  default     = null
+  default     = "null"
 }
