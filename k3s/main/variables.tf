@@ -231,12 +231,6 @@ variable "client_secret" {
   description = "Secret for the client"
   type        = string
   sensitive   = true
-}
-
-variable "client_secret" {
-  description = "Secret for the client"
-  type        = string
-  sensitive   = true
   default     = null
 }
 
