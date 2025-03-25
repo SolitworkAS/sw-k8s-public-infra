@@ -236,15 +236,6 @@ variable "client_secret" {
   default     = "null"
 }
 
-variable "enable_github_sso" {
-  description = "Enable github sso"
-  default = false
-}
-
-variable "enable_sso" {
-  description = "Enable sso"
-  default = false
-}
 
 variable "sso_issuer" {
   description = "Issuer for sso"

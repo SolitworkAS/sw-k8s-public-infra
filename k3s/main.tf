@@ -46,8 +46,6 @@ module "main" {
   github_client_secret = var.github_client_secret
 
   client_secret = var.client_secret
-  enable_github_sso = var.enable_github_sso
-  enable_sso = var.enable_sso
   sso_client_id = var.sso_client_id
   sso_client_secret = var.sso_client_secret
   sso_issuer = var.sso_issuer
