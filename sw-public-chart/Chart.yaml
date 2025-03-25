@@ -10,6 +10,6 @@ appVersion: "1.16.0"
 
 dependencies:
   - name: sw-private-chart
-    version: "0.1.10037"
+    version: "0.1.10038"
     repository: "oci://swimageregdev.azurecr.io/charts/sw-private-chart"
 
