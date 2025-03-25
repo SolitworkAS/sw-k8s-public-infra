@@ -500,7 +500,6 @@ resource "null_resource" "deploy_argocd_application" {
 
       "  syncPolicy:",
       "    automated:",
-      "      prune: true",
       "      selfHeal: true",
       "    syncOptions:",
       "    - ServerSideApply=true",
