@@ -499,6 +499,7 @@ resource "null_resource" "deploy_argocd_application" {
       "  syncPolicy:",
       "    automated:",
       "      selfHeal: true",
+      "      prune: true",
       "    syncOptions:",
       "    - ServerSideApply=true",
       "EOF",
