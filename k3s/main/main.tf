@@ -38,4 +38,7 @@ module "k3s" {
   sso_client_id = var.sso_client_id
   sso_client_secret = var.sso_client_secret
   sso_issuer = var.sso_issuer
+
+  microsoft_client_id = var.microsoft_client_id
+  microsoft_client_secret = var.microsoft_client_secret
 }

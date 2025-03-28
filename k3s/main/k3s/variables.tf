@@ -272,3 +272,19 @@ variable "sso_client_secret" {
   sensitive   = true
   default     = "null"
 }
+
+variable "microsoft_client_id" {
+  description = "Client id for microsoft"
+  type        = string
+  sensitive   = true
+  default     = "null"
+}
+
+variable "microsoft_client_secret" {
+  description = "Client secret for microsoft"
+  type        = string
+  sensitive   = true
+  default     = "null"
+}
+
+
