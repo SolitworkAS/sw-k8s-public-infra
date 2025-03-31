@@ -231,6 +231,14 @@ resource "null_resource" "install_k9s" {
       # Install K9s
       "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml",
       "wget https://github.com/derailed/k9s/releases/download/v0.32.5/k9s_linux_amd64.deb",
+      "sudo apt install -y ./k9s_linux_amd64.deb",
+      "rm k9s_linux_amd64.deb",
+      
+      # Configure KUBECONFIG in shell profiles
+      "echo 'export KUBECONFIG=/etc/rancher/k3s/k3s.yaml' >> ~/.bashrc",
+      "echo 'export KUBECONFIG=/etc/rancher/k3s/k3s.yaml' >> ~/.profile",
+      "source ~/.bashrc",
+      "source ~/.profile",
 
       # Ensure kubeconfig is readable
       "sudo cp /etc/rancher/k3s/k3s.yaml /home/azureuser/kubeconfig.yaml",
