@@ -131,7 +131,7 @@ resource "azurerm_linux_virtual_machine" "virtual_machine_master" {
   name                = "sw-virtual-machine-master"
   location            = var.location
   resource_group_name = var.resource_group_name
-  size             = "Standard_B2ms"
+  size             = "Standard_B4ms"
   admin_username = "azureuser"
   network_interface_ids = [azurerm_network_interface.network_interface.id]
   disable_password_authentication = true
