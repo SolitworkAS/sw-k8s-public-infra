@@ -20,13 +20,11 @@ module "k3s" {
   app_admin_email            = var.app_admin_email
   app_admin_first_name       = var.app_admin_first_name
   app_admin_last_name        = var.app_admin_last_name
-  app_admin_initial_password = var.app_admin_initial_password
   smtp_from     = var.smtp_from
   smtp_host     = var.smtp_host
   smtp_port     = var.smtp_port
   smtp_username = var.smtp_username
   smtp_password = var.smtp_password
-  reportingpassword = var.reportingpassword
 
   github_client_id = var.github_client_id
   github_client_secret = var.github_client_secret
@@ -38,4 +36,5 @@ module "k3s" {
 
   microsoft_client_id = var.microsoft_client_id
   microsoft_client_secret = var.microsoft_client_secret
+
 }

@@ -79,15 +79,6 @@ variable "database_password" {
   }
 }
 
-variable "reportingpassword" {
-  description = "password for reporting user, must be at least 8 characters long"
-  sensitive   = true
-  validation {
-    condition     = can(regex("^.{8,}$", var.reportingpassword))
-    error_message = "email must be at least 8 characters long"
-  }
-}
-
 # SCALING VARIABLES
 variable "min_replicas" {
   default     = 0
@@ -137,14 +128,6 @@ variable "app_admin_email" {
   validation {
     condition     = can(regex("^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$", var.app_admin_email))
     error_message = "Application admin email must be a valid email address"
-  }
-}
-
-variable "app_admin_initial_password" {
-  description = "Application admin initial password, must be at least 8 characters long"
-  validation {
-    condition     = can(regex("^.{8,}$", var.app_admin_initial_password))
-    error_message = "Application admin initial password must be at least 8 characters long"
   }
 }
 

@@ -462,8 +462,6 @@ resource "null_resource" "deploy_argocd_application" {
       "             email: \"${var.app_admin_email}\"",
       "             firstName: \"${var.app_admin_first_name}\"",
       "             lastName: \"${var.app_admin_last_name}\"",
-      "             password: \"${var.app_admin_initial_password}\"",
-
       "           postgres:",
       "             dbUser: \"${var.database_user}\"",
       "             dbPassword: \"${var.database_password}\"",

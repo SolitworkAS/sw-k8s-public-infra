@@ -4,7 +4,6 @@ module "main" {
   customer = var.customer
 
   database_password       = var.database_password
-  reportingpassword       = var.reportingpassword
 
   database_user = var.database_user
 
@@ -24,7 +23,6 @@ module "main" {
   app_admin_email            = var.app_admin_email
   app_admin_first_name       = var.app_admin_first_name
   app_admin_last_name        = var.app_admin_last_name
-  app_admin_initial_password = var.app_admin_initial_password
   storage_access_tier = var.storage_access_tier
   storage_quota = var.storage_quota
   storage_account_name = var.storage_account_name

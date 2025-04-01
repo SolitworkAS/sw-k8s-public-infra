@@ -94,15 +94,6 @@ variable "min_memory" {
   description = "minimum memory"
 }
 
-variable "reportingpassword" {
-  description = "password for reporting user, must be at least 8 characters long"
-  sensitive   = true
-  validation {
-    condition     = can(regex("^.{8,}$", var.reportingpassword))
-    error_message = "email must be at least 8 characters long"
-  }
-}
-
 # SCALING VARIABLES
 variable "min_replicas" {
   default     = 0
@@ -112,6 +103,7 @@ variable "min_replicas" {
     error_message = "min_replicas must be a number"
   }
 }
+
 variable "max_replicas" {
   default     = 10
   description = "maximum number of replicas, must be a number"
@@ -120,10 +112,12 @@ variable "max_replicas" {
     error_message = "max_replicas must be a number"
   }
 }
+
 # SMTP VARIABLES
 variable "smtp_host" {
   description = "SMTP host"
 }
+
 variable "smtp_port" {
   description = "SMTP port, must be a number"
   validation {
@@ -131,13 +125,16 @@ variable "smtp_port" {
     error_message = "SMTP port must be a number"
   }
 }
+
 variable "smtp_username" {
   description = "SMTP username"
 }
+
 variable "smtp_password" {
   description = "SMTP password"
   sensitive   = true
 }
+
 variable "smtp_from" {
   description = "SMTP from address, must be a valid email address"
   validation {
@@ -152,14 +149,6 @@ variable "app_admin_email" {
   validation {
     condition     = can(regex("^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$", var.app_admin_email))
     error_message = "Application admin email must be a valid email address"
-  }
-}
-
-variable "app_admin_initial_password" {
-  description = "Application admin initial password, must be at least 8 characters long"
-  validation {
-    condition     = can(regex("^.{8,}$", var.app_admin_initial_password))
-    error_message = "Application admin initial password must be at least 8 characters long"
   }
 }
 
