@@ -16,19 +16,9 @@ variable "customer" {
   }
 }
 
-variable "realm_name" {
-  description = "The name of the realm in Keycloak. Defaults to the customer name if not specified."
-  type        = string
-  default     = ""
-}
-
 variable "da_version" {
   description = "version of carbacc to deploy"
   default = "dev"
-}
-
-variable "keycloak_version" {
-  default     = "1.0.0"
 }
 
 variable "domain" {
@@ -94,24 +84,6 @@ variable "reportingpassword" {
   validation {
     condition     = can(regex("^.{8,}$", var.reportingpassword))
     error_message = "email must be at least 8 characters long"
-  }
-}
-
-# KEYCLOAK VARIABLES
-variable "keycloak_admin_user" {
-  default     = "admin"
-  description = "Keycloak admin user, must only contain lowercase letters and numbers"
-  validation {
-    condition     = can(regex("^[a-z0-9]+$", var.keycloak_admin_user))
-    error_message = "keycloak_admin_user must only contain lowercase letters and numbers"
-  }
-}
-variable "keycloak_admin_password" {
-  description = "password for Keycloak admin user, must be at least 8 characters long"
-  sensitive   = true
-  validation {
-    condition     = can(regex("^.{8,}$", var.keycloak_admin_password))
-    error_message = "keycloak_admin_password must be at least 8 characters long"
   }
 }
 

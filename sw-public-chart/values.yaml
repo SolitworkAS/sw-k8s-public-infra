@@ -29,15 +29,6 @@ sw-private-chart:
     client:
       secret: "supersecure"
 
-    keycloak:
-      name: "keycloak"
-      image: "/images/environment/keycloak"
-      version: "latest"
-      replicas: 1
-      containerPort: 8080
-      admin:
-        password: "supersecurepassword"  
-
     postgres:
       storageSize: "10Gi"
       superUser: "postgres"
@@ -58,30 +49,6 @@ sw-private-chart:
   customer-chart:
 
     namespace: "customera"
-    keycloak:
-      adminUsername: "admin"
-      adminPassword: "admin-password"
-      roles:
-        - "admin"
-        - "carbon"
-        - "organizer"
-        - "reporting"
-        - "respondent"
-        - "disclosure-manager"
-        - "disclosure-project-manager"
-      groups:
-        - "default"
-        - "admin"
-        - "carbon"
-        - "esg_organizer"
-        - "reporting"
-        - "esg_respondent"
-        - "disclosure_manager"
-        - "disclosure_project_manager"
-      clients:
-        - "afc-vat"
-        - "afc-esg"
-        - "afc-carbacc"
 
     smtp:
       host: "smtp.example.com"

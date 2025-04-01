@@ -17,9 +17,6 @@ module "k3s" {
   storage_account_name = var.storage_account_name
   database_user               = var.database_user
   database_password           = var.database_password
-  keycloak_admin_user         = var.keycloak_admin_user
-  keycloak_admin_password     = var.keycloak_admin_password
-  keycloak_version = var.keycloak_version
   app_admin_email            = var.app_admin_email
   app_admin_first_name       = var.app_admin_first_name
   app_admin_last_name        = var.app_admin_last_name

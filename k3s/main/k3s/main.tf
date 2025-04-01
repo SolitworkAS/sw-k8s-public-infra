@@ -2,15 +2,6 @@
 
 locals {
   storage = var.storage_account_name == "" ? "${var.customer}swstorage" : var.storage_account_name
-  
-  # Keycloak configuration
-  keycloak_name               = "keycloak"
-  keycloakdb                  = "keycloak"
-  keycloak_realm              = "customera"
-  keycloak_client_id          = "afc-carbacc"
-  keycloak_client_id_esg          = "afc-esg"
-  keycloak_client_id_vat          = "afc-vat"
-  keycloak_image = "images/environment/keycloak"
 
   prefix = var.self_hosted ? var.customer : "shared"
 }
@@ -431,14 +422,6 @@ resource "null_resource" "deploy_argocd_application" {
       "               secret: \"${var.client_secret}\"",
       "           namespace: \"environment\"",
       "           domain: \"${var.domain}\"",
-      "           keycloak:",
-      "             name: \"keycloak\"",
-      "             image: \"${local.keycloak_image}\"",
-      "             version: \"latest\"",
-      "             replicas: 1",
-      "             containerPort: 8080",
-      "             admin:",
-      "               password: \"${var.keycloak_admin_password}\"",
       "           postgres:",
       "             storageSize: \"10Gi\"",
       "             superUser: \"postgres\"",
@@ -454,17 +437,6 @@ resource "null_resource" "deploy_argocd_application" {
       "                 type: NodePort",
       "         customer-chart:",
       "           namespace: \"${var.customer}\"",
-      "           keycloak:",
-      "             adminUsername: \"admin\"",
-      "             adminPassword: \"${var.keycloak_admin_password}\"",
-      "             roles:",
-      "               - \"admin\"",
-      "               - \"carbon\"",
-      "               - \"organizer\"",
-      "               - \"reporting\"",
-      "               - \"respondent\"",
-      "               - \"disclosure-manager\"",
-      "               - \"disclosure-project-manager\"",
       "             groups:",
       "               - \"default\"",
       "               - \"admin\"",

@@ -3,7 +3,6 @@ module "main" {
 
   customer = var.customer
 
-  keycloak_admin_password = var.keycloak_admin_password
   database_password       = var.database_password
   reportingpassword       = var.reportingpassword
 
@@ -34,7 +33,6 @@ module "main" {
   location         = var.location
 
   da_version = var.da_version
-  keycloak_version = var.keycloak_version
 
   min_replicas = var.min_replicas
   max_replicas = var.max_replicas
