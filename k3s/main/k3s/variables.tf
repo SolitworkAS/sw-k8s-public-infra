@@ -31,7 +31,6 @@ variable "resource_group_name" {
 
 variable "da_version" {
   description = "version of carbacc to deploy"
-  default = "dev"
 }
 
 

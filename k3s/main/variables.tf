@@ -19,7 +19,6 @@ variable "customer" {
 
 variable "da_version" {
   description = "version of carbacc to deploy"
-  default = "dev"
 }
 
 variable "domain" {
