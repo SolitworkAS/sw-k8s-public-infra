@@ -437,13 +437,6 @@ resource "null_resource" "deploy_argocd_application" {
       "                 type: NodePort",
       "         customer-chart:",
       "           namespace: \"${var.customer}\"",
-      "           smtp:",
-      "             host: \"${var.smtp_host}\"",
-      "             port: \"${var.smtp_port}\"",
-      "             from: \"${var.smtp_from}\"",
-      "             username: \"${var.smtp_username}\"",
-      "             password: \"${var.smtp_password}\"",
-
       "           appAdmin:",
       "             email: \"${var.app_admin_email}\"",
       "             firstName: \"${var.app_admin_first_name}\"",
@@ -451,18 +444,15 @@ resource "null_resource" "deploy_argocd_application" {
       "           postgres:",
       "             dbUser: \"${var.database_user}\"",
       "             dbPassword: \"${var.database_password}\"",
-
       "         da-chart:",
       "           namespace: \"da\"",
       "           da:",
       "             da_frontend_image: \"images/da-service/da-frontend\"",
       "             da_service_image: \"images/da-service/da-service\"",
       "             da_version: \"${var.da_version}\"",
-
       "  destination:",
       "    server: \"https://kubernetes.default.svc\"",
       "    namespace: \"${var.customer}\"",
-
       "  syncPolicy:",
       "    automated:",
       "      selfHeal: true",
