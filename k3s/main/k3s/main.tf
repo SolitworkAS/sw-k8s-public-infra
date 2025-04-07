@@ -537,18 +537,6 @@ resource "null_resource" "fetch_k3s_token" {
     command = "scp -i '${var.ssh_private_key}' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null azureuser@${azurerm_public_ip.public_ip.ip_address}:/tmp/k3s_node_token_for_tf.tmp ./${local.prefix}_k3s_node_token.tmp"
   }
 
-  # Cleanup temporary file on the master node during destroy
-  provisioner "remote-exec" {
-    when   = destroy
-    inline = ["rm -f /tmp/k3s_node_token_for_tf.tmp"]
-  }
-
-  # Cleanup temporary file on the local machine during destroy
-  provisioner "local-exec" {
-    when    = destroy
-    command = "rm -f ./${local.prefix}_k3s_node_token.tmp"
-  }
-
   triggers = {
     # Re-fetch the token if the master VM or K3s installation changes
     master_vm_id = azurerm_linux_virtual_machine.virtual_machine_master.id
