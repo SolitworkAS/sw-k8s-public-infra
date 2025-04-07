@@ -38,7 +38,4 @@ module "k3s" {
 
   microsoft_client_id = var.microsoft_client_id
   microsoft_client_secret = var.microsoft_client_secret
-
-  k3s_server_url = module.k3s.k3s_server_url
-  k3s_token = module.k3s.k3s_token
 }
