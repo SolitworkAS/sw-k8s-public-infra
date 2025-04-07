@@ -167,7 +167,7 @@ resource "null_resource" "k3s_hardening" {
   provisioner "remote-exec" {
     inline = [
       # Kernel sysctl
-      "echo -e 'vm.panic_on_oom=0\nvm.overcommit_memory=1\nkernel.panic=10\nkernel.panic_on_oops=1' | sudo tee /etc/sysctl.d/90-kubelet.conf",
+      "echo 'vm.panic_on_oom=0\\nvm.overcommit_memory=1\\nkernel.panic=10\\nkernel.panic_on_oops=1' | sudo tee /etc/sysctl.d/90-kubelet.conf",
       "sudo sysctl -p /etc/sysctl.d/90-kubelet.conf",
 
       # PSA config
