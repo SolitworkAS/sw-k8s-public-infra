@@ -524,14 +524,22 @@ resource "null_resource" "fetch_k3s_token" {
   # Use remote-exec to copy the token to a temporary, readable location
   provisioner "remote-exec" {
     inline = [
+      "echo 'Starting token fetch process...'",
       "TOKEN_PATH=/var/lib/rancher/k3s/server/node-token",
       "TEMP_TOKEN_PATH=/tmp/k3s_node_token_for_tf.tmp",
-      # Wait for the token file to exist, with a timeout
-      "timeout=60; while [ ! -f $TOKEN_PATH ] && [ $timeout -gt 0 ]; do sleep 2; timeout=$((timeout-2)); done",
-      "[ -f $TOKEN_PATH ] || exit 1", # Exit if token file doesn't appear
+      "echo 'Token path: $TOKEN_PATH'",
+      "echo 'Checking if K3s service is running...'",
+      "sudo systemctl status k3s || echo 'K3s service not running'",
+      "echo 'Checking if token file exists...'",
+      "ls -la $TOKEN_PATH || echo 'Token file not found'",
+      "echo 'Waiting for token file to appear...'",
+      "timeout=120; while [ ! -f $TOKEN_PATH ] && [ $timeout -gt 0 ]; do echo 'Waiting... ($timeout seconds remaining)'; sleep 5; timeout=$((timeout-5)); done",
+      "if [ ! -f $TOKEN_PATH ]; then echo 'Token file not found after timeout'; exit 1; fi",
+      "echo 'Token file found, copying to temp location...'",
       "sudo cp $TOKEN_PATH $TEMP_TOKEN_PATH",
       "sudo chown azureuser:azureuser $TEMP_TOKEN_PATH",
-      "sudo chmod 600 $TEMP_TOKEN_PATH"
+      "sudo chmod 600 $TEMP_TOKEN_PATH",
+      "echo 'Token copied successfully'"
     ]
   }
 
