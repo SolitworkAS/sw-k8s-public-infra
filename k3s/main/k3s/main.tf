@@ -174,16 +174,13 @@ resource "null_resource" "k3s_hardening" {
       "sudo sysctl -p /etc/sysctl.d/90-kubelet.conf",
 
       # PSA config
-      "sudo mkdir -p /var/lib/rancher/k3s/server",
-      "sudo tee /var/lib/rancher/k3s/server/psa.yaml > /dev/null <<EOF\n${replace(file("${path.module}/security/psa.yaml"), "\n", "\\n")}\nEOF",
+      "sudo cp ${path.module}/security/psa.yaml /var/lib/rancher/k3s/server/psa.yaml",
 
       # Audit policy config
-      "sudo mkdir -p /var/lib/rancher/k3s/server/logs", # Ensure log directory exists
       "sudo tee /var/lib/rancher/k3s/server/audit.yaml > /dev/null <<EOF\napiVersion: audit.k8s.io/v1\nkind: Policy\nrules:\n  - level: Metadata\nEOF",
 
       # K3s main config (apply last)
-      "sudo mkdir -p /etc/rancher/k3s",
-      "sudo tee /etc/rancher/k3s/config.yaml > /dev/null <<EOF\n${replace(file("${path.module}/security/config.yaml"), "\n", "\\n")}\nEOF",
+      "sudo cp ${path.module}/security/config.yaml /etc/rancher/k3s/config.yaml",
 
       # Reload daemon, wait, and start K3s
       "sudo systemctl daemon-reload",
