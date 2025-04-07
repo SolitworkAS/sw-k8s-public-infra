@@ -2,8 +2,6 @@
 
 locals {
   storage = var.storage_account_name == "" ? "${var.customer}swstorage" : var.storage_account_name
-  
-  vm_count = var.is_development ? 1 : 5
 
   prefix = var.self_hosted ? var.customer : "shared"
 }
@@ -99,16 +97,30 @@ resource "azurerm_public_ip" "public_ip" {
   depends_on = [azurerm_virtual_network.virtual_network]
 }
 
-resource "azurerm_linux_virtual_machine" "virtual_machine_master" {
-  count               = local.vm_count
-  name                = "sw-virtual-machine-master-${count.index}"
+# Network Interface
+resource "azurerm_network_interface" "network_interface" {
+  name                = "sw-network-interface"
   location            = var.location
   resource_group_name = var.resource_group_name
-  size                = "Standard_B4ms"
-  admin_username      = "azureuser"
-  network_interface_ids = [
-    azurerm_network_interface.network_interface[count.index].id
-  ]
+
+  ip_configuration {
+    name                          = "internal"
+    subnet_id                     = azurerm_subnet.subnet.id
+    private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.public_ip.id
+  }
+
+  depends_on = [azurerm_virtual_network.virtual_network, azurerm_public_ip.public_ip, azurerm_subnet.subnet]
+}
+
+# Virtual Machine
+resource "azurerm_linux_virtual_machine" "virtual_machine_master" {
+  name                = "sw-virtual-machine-master"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  size             = "Standard_B4ms"
+  admin_username = "azureuser"
+  network_interface_ids = [azurerm_network_interface.network_interface.id]
   disable_password_authentication = true
 
   admin_ssh_key {
@@ -128,31 +140,8 @@ resource "azurerm_linux_virtual_machine" "virtual_machine_master" {
     version   = "latest"
   }
 
-  depends_on = [
-    azurerm_virtual_network.virtual_network,
-    azurerm_subnet.subnet,
-    azurerm_network_interface.network_interface
-  ]
-}
+  depends_on = [azurerm_virtual_network.virtual_network, azurerm_public_ip.public_ip, azurerm_subnet.subnet, azurerm_network_interface.network_interface]
 
-resource "azurerm_network_interface" "network_interface" {
-  count               = local.vm_count
-  name                = "sw-network-interface-${count.index}"
-  location            = var.location
-  resource_group_name = var.resource_group_name
-
-  ip_configuration {
-    name                          = "internal"
-    subnet_id                     = azurerm_subnet.subnet.id
-    private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.public_ip.id
-  }
-
-  depends_on = [
-    azurerm_virtual_network.virtual_network,
-    azurerm_public_ip.public_ip,
-    azurerm_subnet.subnet
-  ]
 }
 
 resource "azurerm_virtual_machine_extension" "k3s_install" {
@@ -172,7 +161,7 @@ resource "azurerm_virtual_machine_extension" "k3s_install" {
 resource "null_resource" "k3s_hardening" {
   depends_on = [
     azurerm_linux_virtual_machine.virtual_machine_master,
-    azurerm_virtual_machine_extension.k3s_install
+    azurerm_virtual_machine_extension.k3s_install,
   ]
 
   provisioner "remote-exec" {
@@ -190,7 +179,7 @@ resource "null_resource" "k3s_hardening" {
 
       # K3s main config
       "sudo mkdir -p /etc/rancher/k3s",
-      "sudo tee /etc/rancher/k3s/config.yaml > /dev/null <<EOF\n${replace(file("${path.module}/main/security/config.yaml"), "\n", "\\n")}\nEOF",
+      "sudo tee /etc/rancher/k3s/config.yaml > /dev/null <<EOF\n${replace(file("${path.module}/main/config.yaml"), "\n", "\\n")}\nEOF",
 
       # Start K3s after all config is in place
       "sudo systemctl restart k3s || sudo systemctl start k3s"
@@ -205,11 +194,11 @@ resource "null_resource" "k3s_hardening" {
   }
 }
 
+
 resource "null_resource" "install_helm" {
   depends_on = [
     azurerm_linux_virtual_machine.virtual_machine_master,
-    azurerm_virtual_machine_extension.k3s_install,
-    null_resource.k3s_hardening
+    azurerm_virtual_machine_extension.k3s_install
   ]
 
   provisioner "remote-exec" {
@@ -226,6 +215,7 @@ resource "null_resource" "install_helm" {
     }
   }
 }
+
 
 resource "null_resource" "install_argocd" {
   depends_on = [
@@ -251,6 +241,7 @@ resource "null_resource" "install_argocd" {
     }
   }
 }
+
 
 resource "null_resource" "install_k9s" {
   depends_on = [
@@ -412,6 +403,8 @@ resource "null_resource" "private_chart_repository_secret" {
     always_run = "${timestamp()}"
   }
 }
+
+
 
 resource "null_resource" "deploy_argocd_application" {
   depends_on = [
