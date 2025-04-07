@@ -166,8 +166,11 @@ resource "null_resource" "k3s_hardening" {
 
   provisioner "remote-exec" {
     inline = [
+      # Ensure K3s service is stopped before applying config
+      "sudo systemctl stop k3s || true",
+
       # Kernel sysctl
-      "echo 'vm.panic_on_oom=0\\nvm.overcommit_memory=1\\nkernel.panic=10\\nkernel.panic_on_oops=1' | sudo tee /etc/sysctl.d/90-kubelet.conf",
+      "echo 'vm.panic_on_oom=0\nvm.overcommit_memory=1\nkernel.panic=10\nkernel.panic_on_oops=1' | sudo tee /etc/sysctl.d/90-kubelet.conf > /dev/null",
       "sudo sysctl -p /etc/sysctl.d/90-kubelet.conf",
 
       # PSA config
@@ -175,14 +178,17 @@ resource "null_resource" "k3s_hardening" {
       "sudo tee /var/lib/rancher/k3s/server/psa.yaml > /dev/null <<EOF\n${replace(file("${path.module}/security/psa.yaml"), "\n", "\\n")}\nEOF",
 
       # Audit policy config
+      "sudo mkdir -p /var/lib/rancher/k3s/server/logs", # Ensure log directory exists
       "sudo tee /var/lib/rancher/k3s/server/audit.yaml > /dev/null <<EOF\napiVersion: audit.k8s.io/v1\nkind: Policy\nrules:\n  - level: Metadata\nEOF",
 
-      # K3s main config
+      # K3s main config (apply last)
       "sudo mkdir -p /etc/rancher/k3s",
       "sudo tee /etc/rancher/k3s/config.yaml > /dev/null <<EOF\n${replace(file("${path.module}/security/config.yaml"), "\n", "\\n")}\nEOF",
 
-      # Start K3s after all config is in place
-      "sudo systemctl restart k3s || sudo systemctl start k3s"
+      # Reload daemon, wait, and start K3s
+      "sudo systemctl daemon-reload",
+      "sleep 5",
+      "sudo systemctl start k3s"
     ]
 
     connection {
