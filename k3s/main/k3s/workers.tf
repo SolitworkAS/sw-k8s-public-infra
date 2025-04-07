@@ -1,14 +1,10 @@
 ### Additional Nodes for K3S
 
-variable "k3s_server_url" {
-  description = "The URL of the K3s server to join."
-  type        = string
-}
-
-variable "k3s_token" {
-  description = "The K3s node token for joining the cluster."
-  type        = string
-  sensitive   = true
+locals {
+  # Reference the same data source and resource as the outputs in main.tf
+  # This explicitly tells Terraform to wait for these before proceeding.
+  k3s_token_val      = trimspace(data.local_file.k3s_token_file.content)
+  k3s_server_url_val = "https://${azurerm_public_ip.public_ip.ip_address}:6443"
 }
 
 # Create 4 nodes (2 master, 2 worker)
@@ -84,26 +80,22 @@ resource "azurerm_virtual_machine_extension" "k3s_master_install" {
   type                 = "CustomScript"
   type_handler_version = "2.1"
 
-  # Use variables for server URL and token
+  # Use locals instead of variables
   settings = <<SETTINGS
   {
-    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC='server --server ${var.k3s_server_url} --token ${var.k3s_token}' sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
+    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC='server --server ${local.k3s_server_url_val} --token ${local.k3s_token_val}' sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
   }
   SETTINGS
 
   protected_settings = <<PROTECTED_SETTINGS
   {
-    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC='server --server ${var.k3s_server_url} --token ${var.k3s_token}' sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
+    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC='server --server ${local.k3s_server_url_val} --token ${local.k3s_token_val}' sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
   }
   PROTECTED_SETTINGS
 
   depends_on = [
     azurerm_linux_virtual_machine.node_virtual_machines,
-    # Ensure the initial master K3s install is done (implicitly ensures token is available via main.tf logic)
-    # azurerm_linux_virtual_machine.virtual_machine_master,
-    # azurerm_virtual_machine_extension.k3s_install
-    # Note: Assuming main.tf provides the token/URL, explicit depends_on for main.tf resources isn't needed here,
-    # dependency is handled by passing the variable values.
+    # Implicit dependency on main.tf resources via locals above is now sufficient
   ]
 }
 
@@ -116,24 +108,22 @@ resource "azurerm_virtual_machine_extension" "k3s_worker_install" {
   type                 = "CustomScript"
   type_handler_version = "2.1"
 
-  # Use variables for server URL and token
+  # Use locals instead of variables
   settings = <<SETTINGS
   {
-    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | K3S_URL=${var.k3s_server_url} K3S_TOKEN=${var.k3s_token} sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
+    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | K3S_URL=${local.k3s_server_url_val} K3S_TOKEN=${local.k3s_token_val} sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
   }
   SETTINGS
 
   protected_settings = <<PROTECTED_SETTINGS
   {
-    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | K3S_URL=${var.k3s_server_url} K3S_TOKEN=${var.k3s_token} sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
+    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | K3S_URL=${local.k3s_server_url_val} K3S_TOKEN=${local.k3s_token_val} sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
   }
   PROTECTED_SETTINGS
 
   depends_on = [
     azurerm_linux_virtual_machine.node_virtual_machines,
-     # Ensure the initial master K3s install is done (implicitly ensures token is available via main.tf logic)
-    # azurerm_linux_virtual_machine.virtual_machine_master,
-    # azurerm_virtual_machine_extension.k3s_install
+    # Implicit dependency on main.tf resources via locals above is now sufficient
   ]
 }
 
