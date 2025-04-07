@@ -4,6 +4,7 @@ locals {
 
 module "k3s" {
   source = "./k3s"
+  is_development = var.is_development
   ssh_public_key = var.ssh_public_key
   ssh_private_key = var.ssh_private_key
   customer = var.customer

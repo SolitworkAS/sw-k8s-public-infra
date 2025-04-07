@@ -248,4 +248,11 @@ variable "microsoft_client_secret" {
   default     = "null"
 }
 
+# VM Control
+
+variable "is_development" {
+  description = "Whether the deployment is in development mode"
+  type        = bool
+  default     = false
+}
 

@@ -1,6 +1,8 @@
 module "main" {
   source = "./main"
 
+  is_development = var.is_development
+
   customer = var.customer
 
   database_password       = var.database_password
