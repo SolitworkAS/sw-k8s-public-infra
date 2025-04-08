@@ -200,11 +200,14 @@ resource "null_resource" "k3s_hardening" {
 resource "null_resource" "install_helm" {
   depends_on = [
     azurerm_linux_virtual_machine.virtual_machine_master,
-    azurerm_virtual_machine_extension.k3s_install
+    azurerm_virtual_machine_extension.k3s_install,
+    null_resource.k3s_hardening
   ]
 
   provisioner "remote-exec" {
     inline = [
+      "echo 'Waiting for k3s to be fully reset and ready...'",
+      "sleep 60",
       "curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash",
       "helm version",
     ]
