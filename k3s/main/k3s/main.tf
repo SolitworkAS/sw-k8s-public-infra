@@ -508,8 +508,3 @@ resource "null_resource" "deploy_argocd_application" {
     always_run = "${timestamp()}"
   }
 }
-# Data source to read the fetched K3s token from the local temporary file
-data "local_file" "k3s_token_file" {
-  filename   = "${path.module}/${local.prefix}_k3s_node_token.tmp"
-  depends_on = [null_resource.fetch_k3s_token]
-}
