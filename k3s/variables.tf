@@ -234,3 +234,10 @@ variable "is_development" {
   default     = false
 }
 
+variable "k3s_token" {
+  description = "Token for k3s, defaults to a random 16 character string if not provided."
+  type        = string
+  default     = random_string.k3s_token.result
+  sensitive   = true
+}
+

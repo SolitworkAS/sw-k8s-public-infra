@@ -165,7 +165,7 @@ resource "azurerm_virtual_machine_extension" "k3s_install" {
 
   settings = <<SETTINGS
   {
-    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644 && sudo ufw allow 6443/tcp && sudo ufw reload"
+    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | K3S_TOKEN=${var.k3s_token} sh -s - server --cluster-init --write-kubeconfig-mode 644 && sudo ufw allow 6443/tcp && sudo ufw allow 2379/tcp && sudo ufw allow 2380/tcp && sudo ufw reload"
   }
   SETTINGS
 }

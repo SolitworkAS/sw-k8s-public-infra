@@ -62,7 +62,7 @@ resource "azurerm_virtual_machine_extension" "k3s_master_install" {
 
   settings = <<SETTINGS
   {
-    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC='server --server ${var.k3s_server_url} --token ${var.k3s_token}' sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
+    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC='server --server ${var.k3s_server_url} --token ${var.k3s_token}' sh -s - && sudo ufw allow 6443/tcp && sudo ufw allow 2379/tcp && sudo ufw allow 2380/tcp && sudo ufw reload"
   }
   SETTINGS
 }

@@ -50,4 +50,12 @@ module "main" {
 
   microsoft_client_id = var.microsoft_client_id
   microsoft_client_secret = var.microsoft_client_secret
+
+  k3s_token = var.k3s_token
+}
+
+resource "random_string" "k3s_token" {
+  length           = 16
+  special          = false
+  override_special = ""
 }

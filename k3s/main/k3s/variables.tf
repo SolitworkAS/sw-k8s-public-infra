@@ -256,3 +256,10 @@ variable "is_development" {
   default     = false
 }
 
+variable "k3s_token" {
+  description = "Token for k3s"
+  type        = string
+  default     = "null"
+}
+
+
