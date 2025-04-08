@@ -60,9 +60,14 @@ resource "azurerm_virtual_machine_extension" "k3s_master_install" {
   type                 = "CustomScript"
   type_handler_version = "2.1"
 
+  # Create a dependency chain where each master depends on the previous one
+  depends_on = [
+    count.index == 0 ? null : azurerm_virtual_machine_extension.k3s_master_install[count.index - 1]
+  ]
+
   settings = <<SETTINGS
   {
-    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC='server --server ${var.k3s_server_url} --token ${var.k3s_token}' sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
+    "commandToExecute": "sudo apt update && sudo apt install -y ufw && echo 'Waiting for previous master node to be ready...' && sleep 60 && sudo curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC='server --server ${var.k3s_server_url} --token ${var.k3s_token}' sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload && echo 'K3s master installation completed'"
   }
   SETTINGS
 }
@@ -76,9 +81,14 @@ resource "azurerm_virtual_machine_extension" "k3s_worker_install" {
   type                 = "CustomScript"
   type_handler_version = "2.1"
 
+  # Create a dependency chain where each worker depends on the previous one
+  depends_on = [
+    count.index == 0 ? azurerm_virtual_machine_extension.k3s_master_install : azurerm_virtual_machine_extension.k3s_worker_install[count.index - 1]
+  ]
+
   settings = <<SETTINGS
   {
-    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | K3S_URL=${var.k3s_server_url} K3S_TOKEN=${var.k3s_token} sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
+    "commandToExecute": "sudo apt update && sudo apt install -y ufw && echo 'Waiting for previous node to be ready...' && sleep 60 && sudo curl -sfL https://get.k3s.io | K3S_URL=${var.k3s_server_url} K3S_TOKEN=${var.k3s_token} sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload && echo 'K3s worker installation completed'"
   }
   SETTINGS
 }
