@@ -67,6 +67,18 @@ resource "azurerm_network_security_group" "network_security_group" {
     destination_address_prefix = "*"
   }
 
+  security_rule {
+    name                       = "Allow-K3S-API"
+    priority                   = 1003 # Priority after SSH and HTTP
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "6443"
+    source_address_prefix      = "VirtualNetwork" # Allow traffic from within the VNet
+    destination_address_prefix = "*" 
+  }
+
   depends_on = [azurerm_resource_group.rg]
 }
 
