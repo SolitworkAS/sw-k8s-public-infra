@@ -508,75 +508,8 @@ resource "null_resource" "deploy_argocd_application" {
     always_run = "${timestamp()}"
   }
 }
-
-# Resource to fetch the K3s node token from the master node
-resource "null_resource" "fetch_k3s_token" {
-  depends_on = [null_resource.k3s_hardening] # Ensure K3s setup and hardening is complete
-
-  # Connection details for SSH access to the master node
-  connection {
-    type        = "ssh"
-    host        = azurerm_public_ip.public_ip.ip_address
-    user        = "azureuser"
-    private_key = var.ssh_private_key
-  }
-
-  # Use remote-exec to copy the token to a temporary, readable location
-  provisioner "remote-exec" {
-    inline = [
-      "echo 'Starting token fetch process...'",
-      "TOKEN_PATH=/var/lib/rancher/k3s/server/node-token",
-      "TEMP_TOKEN_PATH=/tmp/k3s_node_token_for_tf.tmp",
-      "echo 'Token path: $TOKEN_PATH'",
-      "echo 'Checking if K3s service is running...'",
-      "sudo systemctl status k3s || echo 'K3s service not running'",
-      "echo 'Checking if token file exists...'",
-      "ls -la $TOKEN_PATH || echo 'Token file not found'",
-      "echo 'Waiting for token file to appear...'",
-      "timeout=120; while [ ! -f $TOKEN_PATH ] && [ $timeout -gt 0 ]; do echo 'Waiting... ($timeout seconds remaining)'; sleep 5; timeout=$((timeout-5)); done",
-      "if [ ! -f $TOKEN_PATH ]; then echo 'Token file not found after timeout'; exit 1; fi",
-      "echo 'Token file found, copying to temp location...'",
-      "sudo cp $TOKEN_PATH $TEMP_TOKEN_PATH",
-      "sudo chown azureuser:azureuser $TEMP_TOKEN_PATH",
-      "sudo chmod 600 $TEMP_TOKEN_PATH",
-      "echo 'Token copied successfully'"
-    ]
-  }
-
-  # Use local-exec to securely copy the temporary token file from the master node
-  provisioner "local-exec" {
-    command = "scp -i '${var.ssh_private_key}' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null azureuser@${azurerm_public_ip.public_ip.ip_address}:/tmp/k3s_node_token_for_tf.tmp ./${local.prefix}_k3s_node_token.tmp"
-  }
-
-  triggers = {
-    # Re-fetch the token if the master VM or K3s installation changes
-    master_vm_id = azurerm_linux_virtual_machine.virtual_machine_master.id
-    k3s_install_id = azurerm_virtual_machine_extension.k3s_install.id
-    k3s_hardening_id = null_resource.k3s_hardening.id
-  }
-}
-
 # Data source to read the fetched K3s token from the local temporary file
 data "local_file" "k3s_token_file" {
   filename   = "${path.module}/${local.prefix}_k3s_node_token.tmp"
   depends_on = [null_resource.fetch_k3s_token]
-}
-
-# Output the K3s token for worker nodes
-output "k3s_token" {
-  value       = trimspace(data.local_file.k3s_token_file.content) # Read token from the local file
-  sensitive   = true
-  description = "The K3s token for joining worker nodes to the cluster"
-}
-
-# Output the K3s server URL
-output "k3s_server_url" {
-  value     = "https://${azurerm_public_ip.public_ip.ip_address}:6443"
-  description = "The K3s server URL for joining worker nodes to the cluster"
-}
-
-# Output the master node IP
-output "master_node_ip" {
-  value     = azurerm_public_ip.public_ip.ip_address
-  description = "The public IP address of the master node"
 }

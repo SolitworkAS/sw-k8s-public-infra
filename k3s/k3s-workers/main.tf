@@ -1,53 +1,40 @@
-### Additional Nodes for K3S
-
-locals {
-  # Reference the same data source and resource as the outputs in main.tf
-  # This explicitly tells Terraform to wait for these before proceeding.
-  k3s_token_val      = trimspace(data.local_file.k3s_token_file.content)
-  k3s_server_url_val = "https://${azurerm_public_ip.public_ip.ip_address}:6443"
-}
-
-# Create 4 nodes (2 master, 2 worker)
+# Create public IPs for nodes
 resource "azurerm_public_ip" "node_public_ips" {
-  count               = 4
+  count               = var.node_count
   name                = "sw-node-public-ip-${count.index + 1}"
   location            = var.location
   resource_group_name = var.resource_group_name
   allocation_method   = "Static"
-
-  depends_on = [azurerm_virtual_network.virtual_network]
 }
 
 # Network Interfaces for nodes
 resource "azurerm_network_interface" "node_network_interfaces" {
-  count               = 4
+  count               = var.node_count
   name                = "sw-node-network-interface-${count.index + 1}"
   location            = var.location
   resource_group_name = var.resource_group_name
 
   ip_configuration {
     name                          = "internal"
-    subnet_id                     = azurerm_subnet.subnet.id
+    subnet_id                     = var.subnet_id
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.node_public_ips[count.index].id
   }
-
-  depends_on = [azurerm_virtual_network.virtual_network, azurerm_public_ip.node_public_ips, azurerm_subnet.subnet]
 }
 
 # Virtual Machines for nodes
 resource "azurerm_linux_virtual_machine" "node_virtual_machines" {
-  count               = 4
+  count               = var.node_count
   name                = "sw-node-vm-${count.index + 1}"
   location            = var.location
   resource_group_name = var.resource_group_name
-  size                = "Standard_B4ms"
-  admin_username      = "azureuser"
+  size                = var.vm_size
+  admin_username      = var.admin_username
   network_interface_ids = [azurerm_network_interface.node_network_interfaces[count.index].id]
   disable_password_authentication = true
 
   admin_ssh_key {
-    username   = "azureuser"
+    username   = var.admin_username
     public_key = var.ssh_public_key
   }
 
@@ -62,74 +49,55 @@ resource "azurerm_linux_virtual_machine" "node_virtual_machines" {
     sku       = "server"
     version   = "latest"
   }
-
-  depends_on = [
-    azurerm_virtual_network.virtual_network, 
-    azurerm_public_ip.node_public_ips, 
-    azurerm_subnet.subnet, 
-    azurerm_network_interface.node_network_interfaces
-  ]
 }
 
-# Install K3s on additional master nodes (first 2)
+# Install K3s on additional master nodes
 resource "azurerm_virtual_machine_extension" "k3s_master_install" {
-  count                = 2
+  count                = var.master_count
   name                 = "k3s-master-install-${count.index + 1}"
   virtual_machine_id   = azurerm_linux_virtual_machine.node_virtual_machines[count.index].id
   publisher            = "Microsoft.Azure.Extensions"
   type                 = "CustomScript"
   type_handler_version = "2.1"
 
-  # Use locals instead of variables
   settings = <<SETTINGS
   {
-    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC='server --server ${local.k3s_server_url_val} --token ${local.k3s_token_val}' sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
+    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC='server --server ${var.k3s_server_url} --token ${var.k3s_token}' sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
   }
   SETTINGS
 
   protected_settings = <<PROTECTED_SETTINGS
   {
-    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC='server --server ${local.k3s_server_url_val} --token ${local.k3s_token_val}' sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
+    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC='server --server ${var.k3s_server_url} --token ${var.k3s_token}' sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
   }
   PROTECTED_SETTINGS
-
-  depends_on = [
-    azurerm_linux_virtual_machine.node_virtual_machines,
-    # Implicit dependency on main.tf resources via locals above is now sufficient
-  ]
 }
 
-# Install K3s on worker nodes (last 2)
+# Install K3s on worker nodes
 resource "azurerm_virtual_machine_extension" "k3s_worker_install" {
-  count                = 2
-  name                 = "k3s-worker-install-${count.index + 2}"
-  virtual_machine_id   = azurerm_linux_virtual_machine.node_virtual_machines[count.index + 2].id
+  count                = var.worker_count
+  name                 = "k3s-worker-install-${count.index + var.master_count + 1}"
+  virtual_machine_id   = azurerm_linux_virtual_machine.node_virtual_machines[count.index + var.master_count].id
   publisher            = "Microsoft.Azure.Extensions"
   type                 = "CustomScript"
   type_handler_version = "2.1"
 
-  # Use locals instead of variables
   settings = <<SETTINGS
   {
-    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | K3S_URL=${local.k3s_server_url_val} K3S_TOKEN=${local.k3s_token_val} sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
+    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | K3S_URL=${var.k3s_server_url} K3S_TOKEN=${var.k3s_token} sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
   }
   SETTINGS
 
   protected_settings = <<PROTECTED_SETTINGS
   {
-    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | K3S_URL=${local.k3s_server_url_val} K3S_TOKEN=${local.k3s_token_val} sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
+    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | K3S_URL=${var.k3s_server_url} K3S_TOKEN=${var.k3s_token} sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
   }
   PROTECTED_SETTINGS
-
-  depends_on = [
-    azurerm_linux_virtual_machine.node_virtual_machines,
-    # Implicit dependency on main.tf resources via locals above is now sufficient
-  ]
 }
 
 # Configure KUBECONFIG for all nodes
 resource "null_resource" "node_kubeconfig" {
-  count = 4
+  count = var.node_count
   depends_on = [
     azurerm_linux_virtual_machine.node_virtual_machines,
     azurerm_virtual_machine_extension.k3s_master_install,
@@ -145,15 +113,15 @@ resource "null_resource" "node_kubeconfig" {
       "source ~/.profile",
 
       # Ensure kubeconfig is readable
-      "sudo cp /etc/rancher/k3s/k3s.yaml /home/azureuser/kubeconfig.yaml",
-      "sudo chown azureuser:azureuser /home/azureuser/kubeconfig.yaml",
-      "sudo chmod 600 /home/azureuser/kubeconfig.yaml"
+      "sudo cp /etc/rancher/k3s/k3s.yaml /home/${var.admin_username}/kubeconfig.yaml",
+      "sudo chown ${var.admin_username}:${var.admin_username} /home/${var.admin_username}/kubeconfig.yaml",
+      "sudo chmod 600 /home/${var.admin_username}/kubeconfig.yaml"
     ]
 
     connection {
       type        = "ssh"
       host        = azurerm_public_ip.node_public_ips[count.index].ip_address
-      user        = "azureuser"
+      user        = var.admin_username
       private_key = var.ssh_private_key
     }
   }
@@ -161,7 +129,7 @@ resource "null_resource" "node_kubeconfig" {
 
 # Install K9s on all nodes
 resource "null_resource" "install_k9s_nodes" {
-  count = 4
+  count = var.node_count
   depends_on = [
     azurerm_linux_virtual_machine.node_virtual_machines,
     azurerm_virtual_machine_extension.k3s_master_install,
@@ -180,14 +148,8 @@ resource "null_resource" "install_k9s_nodes" {
     connection {
       type        = "ssh"
       host        = azurerm_public_ip.node_public_ips[count.index].ip_address
-      user        = "azureuser"
+      user        = var.admin_username
       private_key = var.ssh_private_key
     }
   }
-}
-
-# Output the node IPs
-output "additional_node_ips" {
-  value = azurerm_public_ip.node_public_ips[*].ip_address
-  description = "Public IP addresses of the additional nodes"
 } 
