@@ -235,9 +235,9 @@ variable "is_development" {
 }
 
 variable "k3s_token" {
-  description = "Token for k3s, defaults to a random 16 character string if not provided."
+  description = "Token for k3s. If not provided, a random 16 character string will be generated."
   type        = string
-  default     = random_string.k3s_token.result
+  default     = null
   sensitive   = true
 }
 
