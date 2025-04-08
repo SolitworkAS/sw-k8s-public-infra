@@ -65,12 +65,6 @@ resource "azurerm_virtual_machine_extension" "k3s_master_install" {
     "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC='server --server ${var.k3s_server_url} --token ${var.k3s_token}' sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
   }
   SETTINGS
-
-  protected_settings = <<PROTECTED_SETTINGS
-  {
-    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC='server --server ${var.k3s_server_url} --token ${var.k3s_token}' sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
-  }
-  PROTECTED_SETTINGS
 }
 
 # Install K3s on worker nodes
@@ -87,12 +81,6 @@ resource "azurerm_virtual_machine_extension" "k3s_worker_install" {
     "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | K3S_URL=${var.k3s_server_url} K3S_TOKEN=${var.k3s_token} sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
   }
   SETTINGS
-
-  protected_settings = <<PROTECTED_SETTINGS
-  {
-    "commandToExecute": "sudo apt update && sudo apt install -y ufw && sudo curl -sfL https://get.k3s.io | K3S_URL=${var.k3s_server_url} K3S_TOKEN=${var.k3s_token} sh -s - && sudo ufw allow 6443/tcp && sudo ufw reload"
-  }
-  PROTECTED_SETTINGS
 }
 
 # Configure KUBECONFIG for all nodes
