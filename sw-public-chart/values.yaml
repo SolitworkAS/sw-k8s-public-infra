@@ -24,16 +24,9 @@ sw-private-chart:
         enabled: false
         clientID: ""
         clientSecret: ""
-        issuer: ""
-        
+        issuer: ""      
     client:
       secret: "supersecure"
-
-    postgres:
-      storageSize: "10Gi"
-      superUser: "postgres"
-      superUserPassword: "securepassword"
-      defaultDatabase: "postgres"
 
     minio:
       bucket:
@@ -49,23 +42,10 @@ sw-private-chart:
   customer-chart:
 
     namespace: "customera"
-
-    smtp:
-      host: "smtp.example.com"
-      port: "587"
-      from: "noreply@example.com"
-      username: "smtp-user"
-      password: "smtp-password"
-
     appAdmin:
       email: "admin@example.com"
       firstName: "Admin"
       lastName: "User"
-      password: "securepassword"
-
-    postgres:
-      dbUser: "dbuser"
-      dbPassword: "dbpassword"
 
   da-chart:
     namespace: "da"
