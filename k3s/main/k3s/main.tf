@@ -466,6 +466,7 @@ resource "null_resource" "deploy_argocd_application" {
       "                 clientSecret: \"${var.microsoft_client_secret}\"",
       "             client:",
       "               secret: \"${var.client_secret}\"",
+      "             version: \"${var.dex_version}\"",
       "           namespace: \"environment\"",
       "           domain: \"${var.domain}\"",
       "           postgres:",

@@ -21,6 +21,10 @@ variable "da_version" {
   description = "version of carbacc to deploy"
 }
 
+variable "dex_version" {
+  description = "version of dex to deploy"
+}
+
 variable "domain" {
   default = "afcsoftware.com"
   description = "Star domain used by the proxy Eg. afcsoftware.com for customer1.afcsoftware.com"

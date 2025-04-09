@@ -18,7 +18,12 @@ variable "customer" {
 
 variable "da_version" {
   description = "version of carbacc to deploy"
-  default = "2025.04.01"
+  default = "2025.04.1"
+}
+
+variable "dex_version" {
+  description = "version of dex to deploy"
+  default = "latest"
 }
 
 variable "domain" {
