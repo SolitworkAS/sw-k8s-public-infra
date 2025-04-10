@@ -40,4 +40,5 @@ module "k3s" {
   microsoft_client_secret = var.microsoft_client_secret
 
   k3s_token = var.k3s_token
+  domain = var.domain
 }
