@@ -246,7 +246,8 @@ resource "null_resource" "install_argocd" {
       "helm repo add argo https://argoproj.github.io/argo-helm",
       "helm repo update",
       "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml",
-      "helm upgrade --install argocd argo/argo-cd --namespace argocd"
+      "helm upgrade --install argocd argo/argo-cd --namespace argocd",
+      "sleep 60"
     ]
 
     connection {
