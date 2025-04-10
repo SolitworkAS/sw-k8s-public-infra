@@ -23,7 +23,7 @@ variable "da_version" {
 
 variable "dex_version" {
   description = "version of dex to deploy"
-  default = "latest"
+  default = "2025.04.1"
 }
 
 variable "domain" {
