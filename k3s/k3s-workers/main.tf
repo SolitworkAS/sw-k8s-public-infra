@@ -1,6 +1,6 @@
 # Create public IPs for nodes
 resource "azurerm_public_ip" "node_public_ips" {
-  count               = var.node_count
+  count               = var.master_count + var.worker_count
   name                = "sw-node-public-ip-${count.index + 1}"
   location            = var.location
   resource_group_name = var.resource_group_name
@@ -9,7 +9,7 @@ resource "azurerm_public_ip" "node_public_ips" {
 
 # Network Interfaces for nodes
 resource "azurerm_network_interface" "node_network_interfaces" {
-  count               = var.node_count
+  count               = var.master_count + var.worker_count
   name                = "sw-node-network-interface-${count.index + 1}"
   location            = var.location
   resource_group_name = var.resource_group_name
@@ -24,7 +24,7 @@ resource "azurerm_network_interface" "node_network_interfaces" {
 
 # Virtual Machines for nodes
 resource "azurerm_linux_virtual_machine" "node_virtual_machines" {
-  count               = var.node_count
+  count               = var.master_count + var.worker_count
   name                = "sw-node-vm-${count.index + 1}"
   location            = var.location
   resource_group_name = var.resource_group_name
@@ -85,7 +85,7 @@ resource "azurerm_virtual_machine_extension" "k3s_worker_install" {
 
 # Configure KUBECONFIG for all nodes
 resource "null_resource" "node_kubeconfig" {
-  count = var.node_count
+  count = var.master_count + var.worker_count
   depends_on = [
     azurerm_linux_virtual_machine.node_virtual_machines,
     azurerm_virtual_machine_extension.k3s_master_install,
@@ -117,7 +117,7 @@ resource "null_resource" "node_kubeconfig" {
 
 # Install K9s on all nodes
 resource "null_resource" "install_k9s_nodes" {
-  count = var.node_count
+  count = var.master_count + var.worker_count
   depends_on = [
     azurerm_linux_virtual_machine.node_virtual_machines,
     azurerm_virtual_machine_extension.k3s_master_install,

@@ -10,7 +10,7 @@ output "master_public_ips" {
 
 output "worker_public_ips" {
   description = "Public IP addresses of worker nodes"
-  value       = slice(azurerm_public_ip.node_public_ips[*].ip_address, var.master_count, var.node_count)
+  value       = slice(azurerm_public_ip.node_public_ips[*].ip_address, var.master_count, var.master_count + var.worker_count)
 }
 
 output "node_vm_ids" {
@@ -25,5 +25,5 @@ output "master_vm_ids" {
 
 output "worker_vm_ids" {
   description = "IDs of worker node VMs"
-  value       = slice(azurerm_linux_virtual_machine.node_virtual_machines[*].id, var.master_count, var.node_count)
+  value       = slice(azurerm_linux_virtual_machine.node_virtual_machines[*].id, var.master_count, var.master_count + var.worker_count)
 } 

@@ -176,6 +176,44 @@ resource "null_resource" "k3s_hardening" {
     azurerm_virtual_machine_extension.k3s_install,
   ]
 
+  # First, transfer the security files to the remote server
+  provisioner "file" {
+    source      = "${path.module}/security/psa.yaml"
+    destination = "/tmp/psa.yaml"
+
+    connection {
+      type        = "ssh"
+      host        = azurerm_public_ip.public_ip.ip_address
+      user        = "azureuser"
+      private_key = var.ssh_private_key
+    }
+  }
+
+  provisioner "file" {
+    source      = "${path.module}/security/config.yaml"
+    destination = "/tmp/config.yaml"
+
+    connection {
+      type        = "ssh"
+      host        = azurerm_public_ip.public_ip.ip_address
+      user        = "azureuser"
+      private_key = var.ssh_private_key
+    }
+  }
+
+  provisioner "file" {
+    source      = "${path.module}/security/audit.yaml"
+    destination = "/tmp/audit.yaml"
+
+    connection {
+      type        = "ssh"
+      host        = azurerm_public_ip.public_ip.ip_address
+      user        = "azureuser"
+      private_key = var.ssh_private_key
+    }
+  }
+
+  # Then apply the configurations
   provisioner "remote-exec" {
     inline = [
       # Ensure K3s service is stopped before applying config
@@ -186,13 +224,16 @@ resource "null_resource" "k3s_hardening" {
       "sudo sysctl -p /etc/sysctl.d/90-kubelet.conf",
 
       # PSA config
-      "sudo cp ${path.module}/security/psa.yaml /var/lib/rancher/k3s/server/psa.yaml",
+      "sudo cp /tmp/psa.yaml /var/lib/rancher/k3s/server/psa.yaml",
 
       # Audit policy config
-      "sudo tee /var/lib/rancher/k3s/server/audit.yaml > /dev/null <<EOF\napiVersion: audit.k8s.io/v1\nkind: Policy\nrules:\n  - level: Metadata\nEOF",
+      "sudo cp /tmp/audit.yaml /var/lib/rancher/k3s/server/audit.yaml",
 
       # K3s main config (apply last)
-      "sudo cp ${path.module}/security/config.yaml /etc/rancher/k3s/config.yaml",
+      "sudo cp /tmp/config.yaml /etc/rancher/k3s/config.yaml",
+
+      # Clean up temporary files
+      "rm -f /tmp/psa.yaml /tmp/config.yaml /tmp/audit.yaml",
 
       # Reload daemon, wait, and start K3s
       "sudo systemctl daemon-reload",

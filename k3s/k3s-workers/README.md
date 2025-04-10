@@ -8,6 +8,7 @@ This Terraform module creates additional nodes (both master and worker) for a K3
 - Configures the nodes to join an existing K3s cluster
 - Installs K9s on all nodes for easier cluster management
 - Configures KUBECONFIG on all nodes
+- Allows flexible configuration of master and worker node counts
 
 ## Usage
 
@@ -26,9 +27,9 @@ module "k3s_workers" {
   virtual_network_id  = "your-virtual-network-id"
   
   # Optional variables with defaults
-  node_count     = 4
-  master_count   = 2
-  worker_count   = 2
+  master_count   = 2  # Number of master nodes to create
+  worker_count   = 2  # Number of worker nodes to create
+  node_count     = 4  # Total number of nodes (must equal master_count + worker_count)
   vm_size        = "Standard_B4ms"
   admin_username = "azureuser"
 }
@@ -46,9 +47,9 @@ module "k3s_workers" {
 | ssh_private_key | SSH private key for VM access | string | n/a | yes |
 | subnet_id | ID of the subnet where nodes will be placed | string | n/a | yes |
 | virtual_network_id | ID of the virtual network | string | n/a | yes |
-| node_count | Number of nodes to create (total, including masters and workers) | number | 4 | no |
-| master_count | Number of master nodes | number | 2 | no |
-| worker_count | Number of worker nodes | number | 2 | no |
+| master_count | Number of master nodes to create | number | 2 | no |
+| worker_count | Number of worker nodes to create | number | 2 | no |
+| node_count | Total number of nodes (must equal master_count + worker_count) | number | 4 | no |
 | vm_size | Size of the virtual machines | string | "Standard_B4ms" | no |
 | admin_username | Admin username for the VMs | string | "azureuser" | no |
 

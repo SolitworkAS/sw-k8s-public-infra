@@ -41,21 +41,33 @@ variable "virtual_network_id" {
 }
 
 variable "node_count" {
-  description = "Number of nodes to create (total, including masters and workers)"
+  description = "Total number of nodes to create (calculated as master_count + worker_count)"
   type        = number
   default     = 4
+  validation {
+    condition     = var.node_count == var.master_count + var.worker_count
+    error_message = "node_count must equal master_count + worker_count"
+  }
 }
 
 variable "master_count" {
-  description = "Number of master nodes"
+  description = "Number of master nodes to create"
   type        = number
   default     = 2
+  validation {
+    condition     = var.master_count >= 1
+    error_message = "master_count must be at least 1"
+  }
 }
 
 variable "worker_count" {
-  description = "Number of worker nodes"
+  description = "Number of worker nodes to create"
   type        = number
   default     = 2
+  validation {
+    condition     = var.worker_count >= 0
+    error_message = "worker_count must be at least 0"
+  }
 }
 
 variable "vm_size" {
