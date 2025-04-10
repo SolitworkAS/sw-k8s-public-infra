@@ -464,7 +464,6 @@ resource "null_resource" "deploy_argocd_application" {
       "                 clientID: \"${var.microsoft_client_id}\"",
       "                 clientSecret: \"${var.microsoft_client_secret}\"",
       "             client:",
-      "               secret: \"${var.client_secret}\"",
       "             version: \"${var.dex_version}\"",
       "           namespace: \"environment\"",
       "           domain: \"${var.domain}\"",

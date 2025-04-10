@@ -188,14 +188,6 @@ variable "github_client_secret" {
   default     = "null"
 }
 
-variable "client_secret" {
-  description = "Secret for the client"
-  type        = string
-  sensitive   = true
-  default     = "null"
-}
-
-
 variable "sso_issuer" {
   description = "Issuer for sso"
   type        = string
