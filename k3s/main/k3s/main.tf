@@ -555,15 +555,8 @@ resource "null_resource" "deploy_argocd_application" {
       "    jsonPointers:",
       "    - /data",
       "EOF",
-      "echo 'Created ArgoCD application YAML file'",
-      "echo 'Checking if kubectl is available...'",
-      "which kubectl || echo 'kubectl not found'",
-      "echo 'Checking KUBECONFIG...'",
-      "echo $KUBECONFIG",
-      "echo 'Checking if ArgoCD namespace exists...'",
-      "kubectl get namespace argocd || echo 'ArgoCD namespace not found'",
       "echo 'Attempting to apply ArgoCD application...'",
-      "kubectl apply --server-side -f /tmp/argocd-app.yaml || (echo 'Failed to apply ArgoCD application'; cat /tmp/argocd-app.yaml; exit 1)",
+      "kubectl apply --server-side -f /tmp/argocd-app.yaml 2> /tmp/error.log || (echo 'Failed to apply ArgoCD application'; cat /tmp/error.log; exit 1)",
       "echo 'ArgoCD application deployment completed'"
     ]
 
