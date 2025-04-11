@@ -4,6 +4,16 @@ locals {
   storage = var.storage_account_name == "" ? "${var.customer}swstorage" : var.storage_account_name
 
   prefix = var.self_hosted ? var.customer : "shared"
+
+  # Postgres credentials
+  postgres_database = "u${random_string.postgres_database.result}"
+  postgres_username = "u${random_string.postgres_username.result}"
+  postgres_password = "u${random_password.postgres_password.result}"
+  bi_dev_role      = "u${random_string.bi_dev_role.result}"
+
+  # Minio credentials
+  minio_root_user     = random_string.minio_root_user.result
+  minio_root_password = random_password.minio_password.result
 }
 
 resource "random_password" "argoworkflows" {
@@ -19,6 +29,40 @@ resource "random_password" "accesskey" {
 resource "random_password" "secretkey" {
   length  = 32
   special = false
+}
+
+resource "random_password" "postgres_password" {
+  length  = 16
+  special = false
+}
+
+resource "random_password" "minio_password" {
+  length  = 16
+  special = false
+}
+
+resource "random_string" "postgres_database" {
+  length  = 8
+  special = false
+  upper   = false
+}
+
+resource "random_string" "postgres_username" {
+  length  = 8
+  special = false
+  upper   = false
+}
+
+resource "random_string" "bi_dev_role" {
+  length  = 8
+  special = false
+  upper   = false
+}
+
+resource "random_string" "minio_root_user" {
+  length  = 8
+  special = false
+  upper   = false
 }
 
 resource "azurerm_resource_group" "rg" {
@@ -481,6 +525,14 @@ resource "null_resource" "deploy_argocd_application" {
       "             email: \"${var.app_admin_email}\"",
       "             firstName: \"${var.app_admin_first_name}\"",
       "             lastName: \"${var.app_admin_last_name}\"",
+      "           postgres:",
+      "             database: \"${local.postgres_database}\"",
+      "             username: \"${local.postgres_username}\"",
+      "             password: \"${local.postgres_password}\"",
+      "             biDevRole: \"${local.bi_dev_role}\"",
+      "           minio:",
+      "             rootUser: \"${local.minio_root_user}\"",
+      "             rootPassword: \"${local.minio_root_password}\"",
       "         da-chart:",
       "           namespace: \"da\"",
       "           da:",
