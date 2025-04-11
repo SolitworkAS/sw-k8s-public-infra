@@ -471,6 +471,7 @@ resource "null_resource" "deploy_argocd_application" {
 
   provisioner "remote-exec" {
     inline = [
+      "echo 'Starting ArgoCD application deployment...'",
       "cat <<EOF > /tmp/argocd-app.yaml",
       "apiVersion: argoproj.io/v1alpha1",
       "kind: Application",
@@ -554,9 +555,16 @@ resource "null_resource" "deploy_argocd_application" {
       "    jsonPointers:",
       "    - /data",
       "EOF",
-
-      # Apply the ArgoCD Application YAML
-      "kubectl apply --server-side -f /tmp/argocd-app.yaml"
+      "echo 'Created ArgoCD application YAML file'",
+      "echo 'Checking if kubectl is available...'",
+      "which kubectl || echo 'kubectl not found'",
+      "echo 'Checking KUBECONFIG...'",
+      "echo $KUBECONFIG",
+      "echo 'Checking if ArgoCD namespace exists...'",
+      "kubectl get namespace argocd || echo 'ArgoCD namespace not found'",
+      "echo 'Attempting to apply ArgoCD application...'",
+      "kubectl apply --server-side -f /tmp/argocd-app.yaml || (echo 'Failed to apply ArgoCD application'; cat /tmp/argocd-app.yaml; exit 1)",
+      "echo 'ArgoCD application deployment completed'"
     ]
 
     connection {
