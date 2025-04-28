@@ -47,7 +47,6 @@ variable "container_registry_username" {
 
 variable "container_registry_password" {
   description = "container registry password, must not be empty"
-  sensitive   = true
   validation {
     condition     = can(regex("^.{1,}$", var.container_registry_password))
     error_message = "container_registry_password must not be empty"
@@ -76,7 +75,6 @@ variable "database_user" {
 
 variable "database_password" {
   description = "database admin password, must be at least 8 characters long"
-  sensitive   = true
   validation {
     condition     = can(regex("^.{8,}$", var.database_password))
     error_message = "dbpassword must be at least 8 characters long"
@@ -116,7 +114,6 @@ variable "smtp_username" {
 }
 variable "smtp_password" {
   description = "SMTP password"
-  sensitive   = true
 }
 variable "smtp_from" {
   description = "SMTP from address, must be a valid email address"
@@ -173,20 +170,17 @@ variable "ssh_public_key" {
 
 variable "ssh_private_key" {
   description = "ssh private key, must be a valid ssh private key"
-  sensitive   = true
 }
 
 variable "github_client_id" {
   description = "Client secret for github"
   type        = string
-  sensitive   = true
   default     = "null"
 }
 
 variable "github_client_secret" {
   description = "Secret for the client"
   type        = string
-  sensitive   = true
   default     = "null"
 }
 
@@ -199,28 +193,24 @@ variable "sso_issuer" {
 variable "sso_client_id" {
   description = "Client id for sso"
   type        = string
-  sensitive   = true
   default     = "null"
 }
 
 variable "sso_client_secret" {
   description = "Client secret for sso"
   type        = string
-  sensitive   = true
   default     = "null"
 }
 
 variable "microsoft_client_id" {
   description = "Client id for microsoft"
   type        = string
-  sensitive   = true
   default     = "null"
 }
 
 variable "microsoft_client_secret" {
   description = "Client secret for microsoft"
   type        = string
-  sensitive   = true
   default     = "null"
 }
 
@@ -236,6 +226,5 @@ variable "k3s_token" {
   description = "Token for k3s. If not provided, a random 16 character string will be generated."
   type        = string
   default     = null
-  sensitive   = true
 }
 

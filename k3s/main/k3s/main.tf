@@ -555,10 +555,10 @@ resource "null_resource" "deploy_argocd_application" {
       "    - /data",
       "EOF",
 
-      # Apply the ArgoCD Application YAML
-      "kubectl apply --server-side -f /tmp/argocd-app.yaml",
-      "scp -i ${var.ssh_private_key} argocd-app.yaml azureuser@${azurerm_public_ip.public_ip.ip_address}:/tmp/argocd-app.yaml",
-      "ssh -i ${var.ssh_private_key} azureuser@${azurerm_public_ip.public_ip.ip_address} \"kubectl apply --server-side -f /tmp/argocd-app.yaml\" 2>&1 | tee apply_output.txt"
+      "kubectl apply --server-side -f /tmp/argocd-app.yaml > /tmp/kubectl_output.txt 2>&1 || true",
+      
+      # Print the output file for Terraform to capture
+      "echo '=== BEGIN KUBECTL OUTPUT ===' && cat /tmp/kubectl_output.txt && echo '=== END KUBECTL OUTPUT ==='"
     ]
 
     connection {
