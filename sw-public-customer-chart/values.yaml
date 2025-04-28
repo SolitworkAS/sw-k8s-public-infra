@@ -1,0 +1,14 @@
+global:
+  selfhosted: "customera"
+  domain: "afcdemo.com"
+  publicIp: "public-ip"
+  container:
+    registry: "swimageregdev.azurecr.io"
+    username: "my-registry-user"
+    password: "supersecurepassword"
+    imagePullSecret: "registry-secret"
+namespace: "customera"
+appAdmin:
+email: "admin@example.com"
+firstName: "Admin"
+lastName: "User"
