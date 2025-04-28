@@ -557,8 +557,15 @@ resource "null_resource" "deploy_argocd_application" {
 
       "kubectl apply --server-side -f /tmp/argocd-app.yaml > /tmp/kubectl_output.txt 2>&1 || true",
       
-      # Print the output file for Terraform to capture
-      "echo '=== BEGIN KUBECTL OUTPUT ===' && cat /tmp/kubectl_output.txt && echo '=== END KUBECTL OUTPUT ==='"
+      # Print the output file for Terraform to capture, using nonsensitive
+      "echo '=== BEGIN KUBECTL OUTPUT ==='",
+      "cat /tmp/kubectl_output.txt",
+      "echo '=== END KUBECTL OUTPUT ==='",
+      
+      # Also print the contents of the generated YAML for debugging
+      "echo '=== BEGIN ARGOCD APP YAML ==='",
+      "cat /tmp/argocd-app.yaml",
+      "echo '=== END ARGOCD APP YAML ==='"
     ]
 
     connection {
