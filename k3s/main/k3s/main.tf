@@ -538,7 +538,7 @@ resource "null_resource" "deploy_argocd_application" {
       "            da:",
       "              da_frontend_image: \"images/da-service/da-frontend\"",
       "              da_service_image: \"images/da-service/da-service\"",
-      "              da_version: \"${var.da_version}\"",
+      "              da_version: \"latest\"",
       "  destination:",
       "    server: \"https://kubernetes.default.svc\"",
       "    namespace: \"${var.customer}\"",
@@ -556,7 +556,9 @@ resource "null_resource" "deploy_argocd_application" {
       "EOF",
 
       # Apply the ArgoCD Application YAML
-      "kubectl apply --server-side -f /tmp/argocd-app.yaml"
+      "kubectl apply --server-side -f /tmp/argocd-app.yaml",
+      "scp -i ${var.ssh_private_key} argocd-app.yaml azureuser@${azurerm_public_ip.public_ip.ip_address}:/tmp/argocd-app.yaml",
+      "ssh -i ${var.ssh_private_key} azureuser@${azurerm_public_ip.public_ip.ip_address} \"kubectl apply --server-side -f /tmp/argocd-app.yaml\" 2>&1 | tee apply_output.txt"
     ]
 
     connection {
