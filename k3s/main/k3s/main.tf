@@ -550,10 +550,14 @@ resource "null_resource" "deploy_argocd_application" {
       "    - ServerSideApply=true",
       "EOF",
 
-      # Apply the ArgoCD Application YAML and capture output
-      "kubectl apply --server-side -f /tmp/argocd-app.yaml > /tmp/argocd_apply.log 2>&1 || true",
+      # Apply the ArgoCD Application YAML and capture output, forcing conflicts
+      "kubectl apply --server-side --force-conflicts -f /tmp/argocd-app.yaml > /tmp/argocd_apply.log 2>&1 || true",
       "echo 'kubectl apply output log:'",
-      "cat /tmp/argocd_apply.log"
+      "cat /tmp/argocd_apply.log",
+
+      # Explicitly trigger an Argo CD refresh
+      "echo 'Triggering Argo CD refresh...'",
+      "kubectl patch application initial-${var.customer}-app -n argocd -p '{\"metadata\": {\"annotations\": {\"argocd.argoproj.io/refresh\": \"hard\"}}}' --type merge || echo 'Failed to patch Argo CD app for refresh, continuing anyway'"
       
     ]
 
