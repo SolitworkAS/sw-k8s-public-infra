@@ -548,11 +548,6 @@ resource "null_resource" "deploy_argocd_application" {
       "      prune: true",
       "    syncOptions:",
       "    - ServerSideApply=true",
-      "  ignoreDifferences:",
-      "  - group: ''",
-      "    kind: 'Secret'",
-      "    jsonPointers:",
-      "    - /data",
       "EOF",
 
       # Apply the ArgoCD Application YAML and capture output
