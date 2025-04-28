@@ -469,6 +469,36 @@ resource "null_resource" "deploy_argocd_application" {
     null_resource.install_argocd, null_resource.apply_argocd_repository_secret, null_resource.private_chart_repository_secret
   ]
 
+  provisioner "local-exec" {
+    command = <<EOT
+      echo "=== DEBUG VALUES ==="
+      echo "Customer: ${var.customer}"
+      echo "Domain: ${var.domain}"
+      echo "Public IP: ${azurerm_public_ip.public_ip.ip_address}"
+      echo "Container Registry: ${var.container_registry}"
+      echo "Container Username: ${var.container_registry_username}"
+      echo "Container Password: ${var.container_registry_password}"
+      echo "GitHub Client ID: ${var.github_client_id}"
+      echo "GitHub Client Secret: ${var.github_client_secret}"
+      echo "SSO Client ID: ${var.sso_client_id}"
+      echo "SSO Client Secret: ${var.sso_client_secret}"
+      echo "SSO Issuer: ${var.sso_issuer}"
+      echo "Microsoft Client ID: ${var.microsoft_client_id}"
+      echo "Microsoft Client Secret: ${var.microsoft_client_secret}"
+      echo "Dex Version: ${var.dex_version}"
+      echo "App Admin Email: ${var.app_admin_email}"
+      echo "App Admin First Name: ${var.app_admin_first_name}"
+      echo "App Admin Last Name: ${var.app_admin_last_name}"
+      echo "Postgres Database: ${local.postgres_database}"
+      echo "Postgres Username: ${local.postgres_username}"
+      echo "Postgres Password: ${local.postgres_password}"
+      echo "BI Dev Role: ${local.bi_dev_role}"
+      echo "Minio Root User: ${local.minio_root_user}"
+      echo "Minio Root Password: ${local.minio_root_password}"
+      echo "=== END DEBUG VALUES ==="
+    EOT
+  }
+
   provisioner "remote-exec" {
     inline = [
       "cat <<EOF > /tmp/argocd-app.yaml",
@@ -555,17 +585,17 @@ resource "null_resource" "deploy_argocd_application" {
       "    - /data",
       "EOF",
 
-      "kubectl apply --server-side -f /tmp/argocd-app.yaml > /tmp/kubectl_output.txt 2>&1 || true",
+      "echo '=== BEGIN KUBECTL APPLY ==='",
+      "kubectl apply --server-side -f /tmp/argocd-app.yaml",
+      "echo '=== END KUBECTL APPLY ==='",
       
-      # Print the output file for Terraform to capture, using nonsensitive
-      "echo '=== BEGIN KUBECTL OUTPUT ==='",
-      "cat /tmp/kubectl_output.txt",
-      "echo '=== END KUBECTL OUTPUT ==='",
+      "echo '=== BEGIN KUBECTL GET ==='",
+      "kubectl get application -n argocd",
+      "echo '=== END KUBECTL GET ==='",
       
-      # Also print the contents of the generated YAML for debugging
-      "echo '=== BEGIN ARGOCD APP YAML ==='",
-      "cat /tmp/argocd-app.yaml",
-      "echo '=== END ARGOCD APP YAML ==='"
+      "echo '=== BEGIN KUBECTL DESCRIBE ==='",
+      "kubectl describe application -n argocd initial-${var.customer}-app",
+      "echo '=== END KUBECTL DESCRIBE ==='"
     ]
 
     connection {
