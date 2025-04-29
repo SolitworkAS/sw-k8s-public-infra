@@ -18,7 +18,7 @@ variable "customer" {
 
 variable "da_version" {
   description = "version of carbacc to deploy"
-  default = "2025.04.1"
+  default = "2025.04.2"
 }
 
 variable "dex_version" {
