@@ -3,7 +3,7 @@ global:
   domain: "afcdemo.com"
   publicIp: "public-ip"
   container:
-    registry: "swimageregdev.azurecr.io"
+    registry: "swimagereg.azurecr.io"
     username: "my-registry-user"
     password: "supersecurepassword"
     imagePullSecret: "registry-secret"
