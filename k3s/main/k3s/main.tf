@@ -433,7 +433,7 @@ resource "null_resource" "argocd_customer_chart_repository" {
       "apiVersion: v1",
       "kind: Secret",
       "metadata:",
-      "  name: sw-customer-chart",
+      "  name: customer-chart",
       "  namespace: argocd",
       "  labels:",
       "    argocd.argoproj.io/secret-type: repository",
@@ -509,13 +509,13 @@ resource "null_resource" "customer_chart_repository_secret" {
       "apiVersion: v1",
       "kind: Secret",
       "metadata:",
-      "  name: sw-customer-chart",
+      "  name: customer-chart",
       "  namespace: argocd",
       "  labels:",
       "    argocd.argoproj.io/secret-type: repository",
       "stringData:",
       "  url: \"${var.container_registry}/charts\"", # Private Helm repo URL
-      "  name: \"sw-customer-chart\"", # Reference name for the repository
+      "  name: \"customer-chart\"", # Reference name for the repository
       "  type: \"helm\"",  # Set repository type
       "  enableOCI: \"true\"",  # Enable OCI support
       "  username: \"${var.container_registry_username}\"",
