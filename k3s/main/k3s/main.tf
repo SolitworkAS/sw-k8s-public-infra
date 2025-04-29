@@ -577,7 +577,7 @@ resource "null_resource" "deploy_argocd_application" {
       "            da:",
       "              da_frontend_image: \"images/da-service/da-frontend\"",
       "              da_service_image: \"images/da-service/da-service\"",
-      "              da_version: \"latest\"",
+      "              da_version: \"${var.da_version}\"",
       "  destination:",
       "    server: \"https://kubernetes.default.svc\"",
       "    namespace: \"${var.customer}\"",
