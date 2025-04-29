@@ -1,14 +1,25 @@
 global:
-  selfhosted: "customera"
-  domain: "afcdemo.com"
-  publicIp: "public-ip"
+  selfhosted: "customer"
   container:
     registry: "swimageregdev.azurecr.io"
     username: "my-registry-user"
     password: "supersecurepassword"
-    imagePullSecret: "registry-secret"
+  domain: "afcdemo.com"
+
 namespace: "customera"
+
 appAdmin:
-email: "admin@example.com"
-firstName: "Admin"
-lastName: "User"
+  email: "admin@example.com"
+  firstName: "Admin"
+  lastName: "User"
+
+minio:
+  rootUser: "minio"
+  rootPassword: "minio"
+
+postgres:
+  username: "postgres"
+  password: "postgres"
+  database: "postgres"
+  biDevRole: "postgres"
+
