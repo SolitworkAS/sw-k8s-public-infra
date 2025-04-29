@@ -6,20 +6,21 @@ global:
     password: "supersecurepassword"
   domain: "afcdemo.com"
 
-namespace: "customera"
+customer-chart: 
+  namespace: "customera"
 
-appAdmin:
-  email: "admin@example.com"
-  firstName: "Admin"
-  lastName: "User"
+  appAdmin:
+    email: "admin@example.com"
+    firstName: "Admin"
+    lastName: "User"
 
-minio:
-  rootUser: "minio"
-  rootPassword: "minio"
+  minio:
+    rootUser: "minio"
+    rootPassword: "minio"
 
-postgres:
-  username: "postgres"
-  password: "postgres"
-  database: "postgres"
-  biDevRole: "postgres"
+  postgres:
+    username: "postgres"
+    password: "postgres"
+    database: "postgres"
+    biDevRole: "postgres"
 
