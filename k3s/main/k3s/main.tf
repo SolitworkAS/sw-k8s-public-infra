@@ -388,7 +388,7 @@ resource "null_resource" "helm_login" {
   }
 }
 
-resource "null_resource" "apply_argocd_repository_secret" {
+resource "null_resource" "argocd_public_chart_repository" {
   depends_on = [null_resource.install_argocd]
 
   provisioner "remote-exec" {
@@ -398,6 +398,42 @@ resource "null_resource" "apply_argocd_repository_secret" {
       "kind: Secret",
       "metadata:",
       "  name: sw-public-chart",
+      "  namespace: argocd",
+      "  labels:",
+      "    argocd.argoproj.io/secret-type: repository",
+      "stringData:",
+      "  url: https://github.com/SolitworkAS/sw-k8s-public-infra.git",
+      "  project: default",
+      "  insecure: \"true\"",  # Ignore TLS validity if needed
+      "EOF",
+
+      # Apply the ArgoCD Secret configuration
+      "kubectl apply -f /tmp/argocd-repository-secret.yaml -n argocd"
+    ]
+
+    connection {
+      type        = "ssh"
+      host        = azurerm_public_ip.public_ip.ip_address
+      user        = "azureuser"
+      private_key = var.ssh_private_key
+    }
+  }
+
+  triggers = {
+    always_run = "${timestamp()}"
+  }
+}
+
+resource "null_resource" "argocd_customer_chart_repository" {
+  depends_on = [null_resource.install_argocd]
+
+  provisioner "remote-exec" {
+    inline = [
+      "cat <<EOF > /tmp/argocd-repository-secret.yaml",
+      "apiVersion: v1",
+      "kind: Secret",
+      "metadata:",
+      "  name: sw-customer-chart",
       "  namespace: argocd",
       "  labels:",
       "    argocd.argoproj.io/secret-type: repository",
@@ -440,6 +476,46 @@ resource "null_resource" "private_chart_repository_secret" {
       "stringData:",
       "  url: \"${var.container_registry}/charts\"", # Private Helm repo URL
       "  name: \"sw-private-chart\"", # Reference name for the repository
+      "  type: \"helm\"",  # Set repository type
+      "  enableOCI: \"true\"",  # Enable OCI support
+      "  username: \"${var.container_registry_username}\"",
+      "  password: \"${var.container_registry_password}\"",
+      "  project: \"default\"",
+      "EOF",
+
+      # Apply the ArgoCD Secret configuration
+      "kubectl apply -f /tmp/argocd-private-secret.yaml -n argocd"
+    ]
+
+    connection {
+      type        = "ssh"
+      host        = azurerm_public_ip.public_ip.ip_address
+      user        = "azureuser"
+      private_key = var.ssh_private_key
+    }
+  }
+
+  triggers = {
+    always_run = "${timestamp()}"
+  }
+}
+
+resource "null_resource" "customer_chart_repository_secret" {
+  depends_on = [null_resource.install_argocd]
+
+  provisioner "remote-exec" {
+    inline = [
+      "cat <<EOF > /tmp/argocd-private-secret.yaml",
+      "apiVersion: v1",
+      "kind: Secret",
+      "metadata:",
+      "  name: sw-customer-chart",
+      "  namespace: argocd",
+      "  labels:",
+      "    argocd.argoproj.io/secret-type: repository",
+      "stringData:",
+      "  url: \"${var.container_registry}/charts\"", # Private Helm repo URL
+      "  name: \"sw-customer-chart\"", # Reference name for the repository
       "  type: \"helm\"",  # Set repository type
       "  enableOCI: \"true\"",  # Enable OCI support
       "  username: \"${var.container_registry_username}\"",
