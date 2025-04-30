@@ -47,6 +47,21 @@ sw-private-chart:
       firstName: "Admin"
       lastName: "User"
 
+    postgres:
+      username: "postgres"
+      password: "postgres"
+      database: "postgres"
+      biDevRole: "postgres"
+      fcUser: "postgres"
+      fcPassword: "postgres"
+      fcDatabase: "postgres"
+    
+    fc:
+      enabled: false
+
+    da:
+      enabled: true
+
   da-chart:
     namespace: "da"
     da:
