@@ -23,4 +23,13 @@ customer-chart:
     password: "postgres"
     database: "postgres"
     biDevRole: "postgres"
+    fcUser: "postgres"
+    fcPassword: "postgres"
+    fcDatabase: "postgres"
+
+  fc:
+    enabled: false
+
+  da:
+    enabled: true
 
