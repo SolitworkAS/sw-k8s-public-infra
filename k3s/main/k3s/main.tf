@@ -10,6 +10,8 @@ locals {
   postgres_username = "u${random_string.postgres_username.result}"
   postgres_password = "u${random_password.postgres_password.result}"
   bi_dev_role      = "u${random_string.bi_dev_role.result}"
+  argoworkflows_password      = "u${random_password.argoworkflows_password.result}"
+  argoworkflows_username      = "u${random_string.argoworkflows_username.result}"
 
   # Minio credentials
   minio_root_user     = random_string.minio_root_user.result
@@ -34,6 +36,17 @@ resource "random_password" "secretkey" {
 resource "random_password" "postgres_password" {
   length  = 16
   special = false
+}
+
+resource "random_password" "argoworkflows_password" {
+  length  = 16
+  special = false
+}
+
+resource "random_string" "argoworkflows_username" {
+  length  = 8
+  special = false
+  upper   = false
 }
 
 resource "random_password" "minio_password" {
@@ -601,6 +614,9 @@ resource "null_resource" "deploy_argocd_application" {
       "              server:",
       "                service:",
       "                  type: NodePort",
+      "              postgres:",
+      "                username: \"${local.argoworkflows_username}\"",
+      "                password: \"${local.argoworkflows_password}\"",
       "          customer-chart:",
       "            namespace: \"${var.customer}\"",
       "            appAdmin:",
