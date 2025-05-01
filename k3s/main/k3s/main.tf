@@ -10,7 +10,7 @@ locals {
   postgres_username = "u${random_string.postgres_username.result}"
   postgres_password = "u${random_password.postgres_password.result}"
   bi_dev_role      = "u${random_string.bi_dev_role.result}"
-  argoworkflows_password      = "u${random_string.argoworkflows_password.result}"
+  argoworkflows_password      = "u${random_password.argoworkflows_password.result}"
   argoworkflows_username      = "u${random_string.argoworkflows_username.result}"
 
   # Minio credentials
