@@ -67,4 +67,3 @@ sw-private-chart:
     da:
       da_frontend_image: "/images/da-service/da-frontend"
       da_service_image: "/images/da-service/da-service"
-      da_version: "dev"

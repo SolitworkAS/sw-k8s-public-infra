@@ -29,10 +29,6 @@ variable "resource_group_name" {
   }
 }
 
-variable "da_version" {
-  description = "version of carbacc to deploy"
-}
-
 variable "dex_version" {
   description = "version of dex to deploy"
 }
