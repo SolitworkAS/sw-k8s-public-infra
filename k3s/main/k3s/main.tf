@@ -200,6 +200,50 @@ resource "azurerm_linux_virtual_machine" "virtual_machine_master" {
 
 }
 
+# Recovery Services Vault for VM backups
+resource "azurerm_recovery_services_vault" "vm_backup_vault" {
+  name                = "${local.prefix}-vm-backup-vault"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+  sku                 = "Standard" # Or "RS0" for premium features
+  soft_delete_enabled = true       # Recommended for data protection
+
+  tags = {
+    "Managed_By" = "Terraform-Cloud"
+  }
+}
+
+# Backup Policy for the VM
+resource "azurerm_backup_policy_vm" "vm_backup_policy" {
+  name                = "${local.prefix}-vm-backup-policy"
+  resource_group_name = azurerm_resource_group.rg.name
+  recovery_vault_name = azurerm_recovery_services_vault.vm_backup_vault.name
+
+  timezone = "UTC" # Adjust if needed
+
+  backup {
+    frequency = "Daily"
+    time      = "23:00" # Backup time in UTC
+  }
+
+  retention_daily {
+    count = 7 # Retain daily backups for 7 days
+  }
+}
+
+# Associate VM with Backup Policy
+resource "azurerm_backup_protected_vm" "vm_backup_association" {
+  resource_group_name = azurerm_resource_group.rg.name
+  recovery_vault_name = azurerm_recovery_services_vault.vm_backup_vault.name
+  source_vm_id        = azurerm_linux_virtual_machine.virtual_machine_master.id
+  backup_policy_id    = azurerm_backup_policy_vm.vm_backup_policy.id
+
+  depends_on = [
+    azurerm_linux_virtual_machine.virtual_machine_master,
+    azurerm_backup_policy_vm.vm_backup_policy
+  ]
+}
+
 resource "azurerm_virtual_machine_extension" "k3s_install" {
   name                 = "k3s-install"
   virtual_machine_id   = azurerm_linux_virtual_machine.virtual_machine_master.id
