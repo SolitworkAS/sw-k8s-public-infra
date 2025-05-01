@@ -15,18 +15,19 @@ sw-private-chart:
     domain: "afcdemo.com"
 
     dex:
-    connectors:
-      github:
-        enabled: false
-        clientID: "dex"
-        clientSecret: "supersecure"
-      solitwork:
-        enabled: false
-        clientID: ""
-        clientSecret: ""
-        issuer: ""      
-    client:
-      secret: "supersecure"
+      version: "2025.05.2"
+      connectors:
+        github:
+          enabled: false
+          clientID: "dex"
+          clientSecret: "supersecure"
+        solitwork:
+          enabled: false
+          clientID: ""
+          clientSecret: ""
+          issuer: ""      
+      client:
+        secret: "supersecure"
 
     minio:
       bucket:
