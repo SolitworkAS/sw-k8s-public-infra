@@ -16,9 +16,6 @@ variable "customer" {
   }
 }
 
-variable "dex_version" {
-  description = "version of dex to deploy"
-}
 
 variable "domain" {
   default = "afcsoftware.com"

@@ -26,34 +26,5 @@ output "k3s_server_url" {
   description = "The K3s server URL for joining worker nodes to the cluster"
 }
 
-output "debug_values" {
-  value = {
-    customer = var.customer
-    domain = var.domain
-    public_ip = azurerm_public_ip.public_ip.ip_address
-    container_registry = var.container_registry
-    container_username = var.container_registry_username
-    container_password = nonsensitive(var.container_registry_password)
-    github_client_id = var.github_client_id
-    github_client_secret = nonsensitive(var.github_client_secret)
-    sso_client_id = var.sso_client_id
-    sso_client_secret = nonsensitive(var.sso_client_secret)
-    sso_issuer = var.sso_issuer
-    microsoft_client_id = var.microsoft_client_id
-    microsoft_client_secret = nonsensitive(var.microsoft_client_secret)
-    dex_version = var.dex_version
-    app_admin_email = var.app_admin_email
-    app_admin_first_name = var.app_admin_first_name
-    app_admin_last_name = var.app_admin_last_name
-    postgres_database = local.postgres_database
-    postgres_username = local.postgres_username
-    postgres_password = nonsensitive(local.postgres_password)
-    bi_dev_role = local.bi_dev_role
-    minio_root_user = local.minio_root_user
-    minio_root_password = nonsensitive(local.minio_root_password)
-  }
-  description = "Debug values for troubleshooting"
-}
-
 
 

@@ -16,11 +16,6 @@ variable "customer" {
   }
 }
 
-variable "dex_version" {
-  description = "version of dex to deploy"
-  default = "2025.04.1"
-}
-
 variable "domain" {
   default = "afcsoftware.com"
   description = "Star domain used by the proxy Eg. afcsoftware.com for customer1.afcsoftware.com"

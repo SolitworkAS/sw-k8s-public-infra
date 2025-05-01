@@ -32,9 +32,6 @@ module "main" {
 
   location         = var.location
 
-  da_version = var.da_version
-  dex_version = var.dex_version
-
   min_replicas = var.min_replicas
   max_replicas = var.max_replicas
 
