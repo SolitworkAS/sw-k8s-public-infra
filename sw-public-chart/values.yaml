@@ -68,4 +68,4 @@ sw-private-chart:
     da:
       da_frontend_image: "/images/da-service/da-frontend"
       da_service_image: "/images/da-service/da-service"
-      da_version: "2025.05.1"
+      da_version: "2025.05.2"
