@@ -1,7 +1,6 @@
 ### VM's for K3S
 
 locals {
-  storage = var.storage_account_name == "" ? "${var.customer}swstorage" : var.storage_account_name
 
   prefix = var.self_hosted ? var.customer : "shared"
 

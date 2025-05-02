@@ -13,19 +13,11 @@ module "k3s" {
   container_registry          = var.container_registry
   container_registry_username = var.container_registry_username
   container_registry_password = var.container_registry_password
-  min_cpu = var.min_cpu
-  min_memory = var.min_memory
-  storage_account_name = var.storage_account_name
   database_user               = var.database_user
   database_password           = var.database_password
   app_admin_email            = var.app_admin_email
   app_admin_first_name       = var.app_admin_first_name
   app_admin_last_name        = var.app_admin_last_name
-  smtp_from     = var.smtp_from
-  smtp_host     = var.smtp_host
-  smtp_port     = var.smtp_port
-  smtp_username = var.smtp_username
-  smtp_password = var.smtp_password
 
   github_client_id = var.github_client_id
   github_client_secret = var.github_client_secret

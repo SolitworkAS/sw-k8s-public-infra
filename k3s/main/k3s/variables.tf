@@ -74,66 +74,6 @@ variable "container_registry_password" {
   }
 }
 
-# CONTAINER VARIABLES
-
-variable "min_cpu" {
-  default     = 0.50
-  description = "minimum cpu"
-}
-
-variable "min_memory" {
-  default     = "1Gi"
-  description = "minimum memory"
-}
-
-# SCALING VARIABLES
-variable "min_replicas" {
-  default     = 0
-  description = "minimum number of replicas, must be a number, use 0 to allow scaling to 0 to reduce costs"
-  validation {
-    condition     = can(regex("^[0-9]+$", var.min_replicas))
-    error_message = "min_replicas must be a number"
-  }
-}
-
-variable "max_replicas" {
-  default     = 10
-  description = "maximum number of replicas, must be a number"
-  validation {
-    condition     = can(regex("^[0-9]+$", var.max_replicas))
-    error_message = "max_replicas must be a number"
-  }
-}
-
-# SMTP VARIABLES
-variable "smtp_host" {
-  description = "SMTP host"
-}
-
-variable "smtp_port" {
-  description = "SMTP port, must be a number"
-  validation {
-    condition     = can(regex("^[0-9]+$", var.smtp_port))
-    error_message = "SMTP port must be a number"
-  }
-}
-
-variable "smtp_username" {
-  description = "SMTP username"
-}
-
-variable "smtp_password" {
-  description = "SMTP password"
-}
-
-variable "smtp_from" {
-  description = "SMTP from address, must be a valid email address"
-  validation {
-    condition     = can(regex("^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$", var.smtp_from))
-    error_message = "SMTP from address must be a valid email address"
-  }
-}
-
 # APPLICATION ADMIN VARIABLES
 variable "app_admin_email" {
   description = "Application admin email, must be a valid email address"
@@ -149,28 +89,6 @@ variable "app_admin_first_name" {
 
 variable "app_admin_last_name" {
   description = "Application admin last name"
-}
-
-variable "storage_quota" {
-  default = 100
-  description = "storage quota in GB, must be a number"
-  validation {
-    condition = can(regex("^[0-9]+$", var.storage_quota))
-    error_message = "storage_quota must be a number"
-  }
-}
-variable "storage_access_tier" {
-  default = "Hot"
-  description = "storage access tier, must be a valid Azure storage access tier"
-  validation {
-    condition = can(regex("^(Hot|Cool)$", var.storage_access_tier))
-    error_message = "storage_access_tier must be a valid Azure storage access tier"
-  }
-}
-
-variable "storage_account_name" {
-  description = "storage account name, must be a valid Azure storage account name"
-  default = ""
 }
 
 # K3s Variables
