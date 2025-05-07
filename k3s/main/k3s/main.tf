@@ -199,6 +199,7 @@ resource "azurerm_linux_virtual_machine" "virtual_machine_master" {
   os_disk {
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
+    disk_size_gb         = 256
   }
 
   source_image_reference {
