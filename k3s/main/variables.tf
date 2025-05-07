@@ -129,6 +129,24 @@ variable "microsoft_client_secret" {
   default     = "null"
 }
 
+variable "intuit_client_id" {
+  description = "Client id for intuit"
+  type        = string
+  default     = "null"
+}
+
+variable "intuit_client_secret" {
+  description = "Client secret for intuit"
+  type        = string
+  default     = "null"
+}
+
+variable "intuit_redirect_uri" {
+  description = "Redirect uri for intuit"
+  type        = string
+  default     = "null"
+}
+
 # VM Control
 
 variable "is_development" {

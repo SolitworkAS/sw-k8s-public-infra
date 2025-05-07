@@ -32,6 +32,10 @@ module "main" {
   microsoft_client_id = var.microsoft_client_id
   microsoft_client_secret = var.microsoft_client_secret
 
+  intuit_client_id = var.intuit_client_id
+  intuit_client_secret = var.intuit_client_secret
+  intuit_redirect_uri = var.intuit_redirect_uri
+
   # Use the provided token if it exists, otherwise use the generated random string.
   k3s_token = var.k3s_token != null ? var.k3s_token : random_string.k3s_token.result
   domain = var.domain

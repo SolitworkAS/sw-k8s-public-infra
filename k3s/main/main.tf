@@ -29,6 +29,10 @@ module "k3s" {
   microsoft_client_id = var.microsoft_client_id
   microsoft_client_secret = var.microsoft_client_secret
 
+  intuit_client_id = var.intuit_client_id
+  intuit_client_secret = var.intuit_client_secret
+  intuit_redirect_uri = var.intuit_redirect_uri
+
   k3s_token = var.k3s_token
   domain = var.domain
   disk_size_gb = var.disk_size_gb
