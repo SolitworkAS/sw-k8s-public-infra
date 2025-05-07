@@ -522,7 +522,7 @@ resource "null_resource" "private_chart_repository_secret" {
 
 resource "null_resource" "deploy_argocd_application" {
   depends_on = [
-    null_resource.install_argocd, null_resource.argocd_public_chart_repository, null_resource.private_chart_repository_secret, null_resource.customer_chart_repository_secret   ]
+    null_resource.install_argocd, null_resource.argocd_public_chart_repository, null_resource.private_chart_repository_secret   ]
 
   provisioner "remote-exec" {
     inline = [
