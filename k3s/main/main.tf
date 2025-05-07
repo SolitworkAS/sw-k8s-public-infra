@@ -31,4 +31,5 @@ module "k3s" {
 
   k3s_token = var.k3s_token
   domain = var.domain
+  disk_size_gb = var.disk_size_gb
 }

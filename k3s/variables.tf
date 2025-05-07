@@ -142,3 +142,9 @@ variable "k3s_token" {
   default     = null
 }
 
+variable "disk_size_gb" {
+  description = "Disk size for k3s"
+  type        = number
+  default     = 256
+}
+

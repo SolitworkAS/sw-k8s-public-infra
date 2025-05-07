@@ -35,6 +35,7 @@ module "main" {
   # Use the provided token if it exists, otherwise use the generated random string.
   k3s_token = var.k3s_token != null ? var.k3s_token : random_string.k3s_token.result
   domain = var.domain
+  disk_size_gb = var.disk_size_gb
 }
 
 resource "random_string" "k3s_token" {
