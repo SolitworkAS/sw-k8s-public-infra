@@ -9,6 +9,8 @@ module "main" {
 
   database_user = var.database_user
 
+  deployment_revision = var.deployment_revision
+
   container_registry          = var.container_registry
   container_registry_username = var.container_registry_username
   container_registry_password = var.container_registry_password

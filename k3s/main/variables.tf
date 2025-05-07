@@ -167,4 +167,8 @@ variable "disk_size_gb" {
   default     = 256
 }
 
-
+variable "deployment_revision" {
+  description = "Deployment revision"
+  type        = string
+  default     = "HEAD"
+}

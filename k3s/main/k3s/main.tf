@@ -537,7 +537,7 @@ resource "null_resource" "deploy_argocd_application" {
       "  project: default",
       "  source:",
       "    repoURL: \"https://github.com/SolitworkAS/sw-k8s-public-infra\"",
-      "    targetRevision: \"HEAD\"",
+      "    targetRevision: \"${var.deployment_revision}\"",
       "    path: \"sw-public-chart\"",
       "    helm:",
       "      values: |",
