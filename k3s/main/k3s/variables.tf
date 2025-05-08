@@ -163,6 +163,12 @@ variable "intuit_redirect_uri" {
   default     = "null"
 }
 
+variable "encryption_key" {
+  description = "Encryption key for the customer"
+  type        = string
+  default     = "null"
+}
+
 # VM Control
 
 variable "is_development" {

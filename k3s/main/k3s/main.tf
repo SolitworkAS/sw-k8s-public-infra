@@ -600,6 +600,7 @@ resource "null_resource" "deploy_argocd_application" {
       "              clientId: \"${var.intuit_client_id}\"",
       "              clientSecret: \"${var.intuit_client_secret}\"",
       "              redirectUri: \"${var.intuit_redirect_uri}\"",
+      "              encryptionKey: \"${var.encryption_key}\"",
       "  destination:",
       "    server: \"https://kubernetes.default.svc\"",
       "    namespace: \"${var.customer}\"",

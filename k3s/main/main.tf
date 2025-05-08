@@ -34,6 +34,8 @@ module "k3s" {
   intuit_client_secret = var.intuit_client_secret
   intuit_redirect_uri = var.intuit_redirect_uri
 
+  encryption_key = var.encryption_key
+
   k3s_token = var.k3s_token
   domain = var.domain
   disk_size_gb = var.disk_size_gb

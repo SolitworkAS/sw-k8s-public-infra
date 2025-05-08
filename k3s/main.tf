@@ -38,6 +38,8 @@ module "main" {
   intuit_client_secret = var.intuit_client_secret
   intuit_redirect_uri = var.intuit_redirect_uri
 
+  encryption_key = var.encryption_key
+
   # Use the provided token if it exists, otherwise use the generated random string.
   k3s_token = var.k3s_token != null ? var.k3s_token : random_string.k3s_token.result
   domain = var.domain
