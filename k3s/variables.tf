@@ -43,18 +43,6 @@ variable "container_registry_password" {
   }
 }
 
-# CONTAINER VARIABLES
-
-variable "min_cpu" {
-  default     = 0.50
-  description = "minimum cpu"
-}
-
-variable "min_memory" {
-  default     = "1Gi"
-  description = "minimum memory"
-}
-
 variable "database_user" {
   description = "database admin user, must only contain lowercase letters and numbers"
   validation {
@@ -68,48 +56,6 @@ variable "database_password" {
   validation {
     condition     = can(regex("^.{8,}$", var.database_password))
     error_message = "dbpassword must be at least 8 characters long"
-  }
-}
-
-# SCALING VARIABLES
-variable "min_replicas" {
-  default     = 0
-  description = "minimum number of replicas, must be a number, use 0 to allow scaling to 0 to reduce costs"
-  validation {
-    condition     = can(regex("^[0-9]+$", var.min_replicas))
-    error_message = "min_replicas must be a number"
-  }
-}
-variable "max_replicas" {
-  default     = 10
-  description = "maximum number of replicas, must be a number"
-  validation {
-    condition     = can(regex("^[0-9]+$", var.max_replicas))
-    error_message = "max_replicas must be a number"
-  }
-}
-# SMTP VARIABLES
-variable "smtp_host" {
-  description = "SMTP host"
-}
-variable "smtp_port" {
-  description = "SMTP port, must be a number"
-  validation {
-    condition     = can(regex("^[0-9]+$", var.smtp_port))
-    error_message = "SMTP port must be a number"
-  }
-}
-variable "smtp_username" {
-  description = "SMTP username"
-}
-variable "smtp_password" {
-  description = "SMTP password"
-}
-variable "smtp_from" {
-  description = "SMTP from address, must be a valid email address"
-  validation {
-    condition     = can(regex("^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$", var.smtp_from))
-    error_message = "SMTP from address must be a valid email address"
   }
 }
 
@@ -128,28 +74,6 @@ variable "app_admin_first_name" {
 
 variable "app_admin_last_name" {
   description = "Application admin last name"
-}
-
-variable "storage_quota" {
-  default = 100
-  description = "storage quota in GB, must be a number"
-  validation {
-    condition = can(regex("^[0-9]+$", var.storage_quota))
-    error_message = "storage_quota must be a number"
-  }
-}
-variable "storage_access_tier" {
-  default = "Hot"
-  description = "storage access tier, must be a valid Azure storage access tier"
-  validation {
-    condition = can(regex("^(Hot|Cool)$", var.storage_access_tier))
-    error_message = "storage_access_tier must be a valid Azure storage access tier"
-  }
-}
-
-variable "storage_account_name" {
-  description = "storage account name, must be a valid Azure storage account name"
-  default = ""
 }
 
 # K3s Variables
@@ -204,6 +128,30 @@ variable "microsoft_client_secret" {
   default     = "null"
 }
 
+variable "intuit_client_id" {
+  description = "Client id for intuit"
+  type        = string
+  default     = "null"
+}
+
+variable "intuit_client_secret" {
+  description = "Client secret for intuit"
+  type        = string
+  default     = "null"
+}
+
+variable "intuit_redirect_uri" {
+  description = "Redirect uri for intuit"
+  type        = string
+  default     = "null"
+}
+
+variable "encryption_key" {
+  description = "Encryption key for the customer"
+  type        = string
+  default     = "null"
+}
+
 # VM Control
 
 variable "is_development" {
@@ -216,5 +164,17 @@ variable "k3s_token" {
   description = "Token for k3s. If not provided, a random 16 character string will be generated."
   type        = string
   default     = null
+}
+
+variable "disk_size_gb" {
+  description = "Disk size for k3s"
+  type        = number
+  default     = 256
+}
+
+variable "deployment_revision" {
+  description = "Deployment revision"
+  type        = string
+  default     = "HEAD"
 }
 
