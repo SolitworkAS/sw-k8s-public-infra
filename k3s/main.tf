@@ -11,6 +11,9 @@ module "main" {
 
   deployment_revision = var.deployment_revision
 
+  deploy_da_app = var.deploy_da_app
+  deploy_fc_app = var.deploy_fc_app
+
   container_registry          = var.container_registry
   container_registry_username = var.container_registry_username
   container_registry_password = var.container_registry_password
