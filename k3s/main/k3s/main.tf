@@ -635,7 +635,7 @@ resource "null_resource" "deploy_argocd_application" {
       "            namespace: \"fc\"",
       "            fc:",
       "              fc_frontend_image: \"images/financial-close-service/financial-close-frontend\"",
-      "              fc_service_image: \"images/financial-close-service/financial-close-service\"",
+      "              fc_service_image: \"images/financial-close-service/financial-close-backend\"",
       "  destination:",
       "    server: \"https://kubernetes.default.svc\"",
       "    namespace: \"${var.customer}\"",
