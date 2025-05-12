@@ -11,6 +11,10 @@ locals {
   bi_dev_role      = "u${random_string.bi_dev_role.result}"
   argoworkflows_password      = "u${random_password.argoworkflows_password.result}"
   argoworkflows_username      = "u${random_string.argoworkflows_username.result}"
+  fc_user      = "u${random_string.fc_user.result}"
+  fc_password      = "u${random_password.fc_password.result}"
+  fc_database      = "u${random_string.fc_database.result}"
+
 
   # Minio credentials
   minio_root_user     = random_string.minio_root_user.result
@@ -66,6 +70,23 @@ resource "random_string" "postgres_username" {
 }
 
 resource "random_string" "bi_dev_role" {
+  length  = 8
+  special = false
+  upper   = false
+}
+
+resource "random_string" "fc_user" {
+  length  = 8
+  special = false
+  upper   = false
+}
+
+resource "random_password" "fc_password" {
+  length  = 16
+  special = false
+}
+
+resource "random_string" "fc_database" {
   length  = 8
   special = false
   upper   = false
@@ -590,6 +611,9 @@ resource "null_resource" "deploy_argocd_application" {
       "              username: \"${local.postgres_username}\"",
       "              password: \"${local.postgres_password}\"",
       "              biDevRole: \"${local.bi_dev_role}\"",
+      "              fcUser: \"${local.fc_user}\"",
+      "              fcPassword: \"${local.fc_password}\"",
+      "              fcDatabase: \"${local.fc_database}\"",
       "            minio:",
       "              rootUser: \"${local.minio_root_user}\"",
       "              rootPassword: \"${local.minio_root_password}\"",
