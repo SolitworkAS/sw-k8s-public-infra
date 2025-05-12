@@ -9,6 +9,8 @@ module "k3s" {
   ssh_private_key = var.ssh_private_key
   customer = var.customer
   deployment_revision = var.deployment_revision
+  deploy_da_app = var.deploy_da_app
+  deploy_fc_app = var.deploy_fc_app
   location = var.location
   resource_group_name = local.resource_group_name
   container_registry          = var.container_registry

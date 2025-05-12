@@ -194,3 +194,15 @@ variable "deployment_revision" {
   type        = string
   default     = "HEAD"
 }
+
+variable "deploy_da_app" {
+  description = "Whether to deploy the da app"
+  type        = bool
+  default     = false
+}
+
+variable "deploy_fc_app" {
+  description = "Whether to deploy the fc app"
+  type        = bool
+  default     = false
+}
