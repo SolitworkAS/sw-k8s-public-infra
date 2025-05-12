@@ -74,4 +74,4 @@ sw-private-chart:
     fc:
       fc_version: "2025.05.1"
       fc_frontend_image: "images/financial-close-service/financial-close-frontend"
-      fc_service_image: "images/financial-close-service/financial-close-service"
+      fc_service_image: "images/financial-close-service/financial-close-backend"
