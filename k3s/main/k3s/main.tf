@@ -368,7 +368,7 @@ resource "null_resource" "install_argocd" {
       "helm repo add argo https://argoproj.github.io/argo-helm",
       "helm repo update",
       "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml",
-      "helm upgrade --install argocd argo/argo-cd --namespace argocd",
+      "helm upgrade --install argocd argo/argo-cd --namespace argocd --set server.metrics.enabled=true --set controller.metrics.enabled=true --set repoServer.metrics.enabled=true --set applicationSet.metrics.enabled=true",
       "sleep 60"
     ]
 
@@ -573,6 +573,11 @@ resource "null_resource" "deploy_argocd_application" {
       "            imagePullSecret: \"registry-secret\"",
       "          deployDaChart: \"${var.deploy_da_app}\"",
       "          deployFinancialChart: \"${var.deploy_fc_app}\"",
+      "          intuit:",
+      "            clientId: \"${var.intuit_client_id}\"",
+      "            clientSecret: \"${var.intuit_client_secret}\"",
+      "            redirectUri: \"${var.intuit_redirect_uri}\"",
+      "            encryptionKey: \"${var.encryption_key}\"",
       "        sw-private-chart:",
       "          environment-chart:",
       "            dex:",
@@ -626,11 +631,6 @@ resource "null_resource" "deploy_argocd_application" {
       "            da:",
       "              da_frontend_image: \"images/da-service/da-frontend\"",
       "              da_service_image: \"images/da-service/da-service\"",
-      "            intuit:",
-      "              clientId: \"${var.intuit_client_id}\"",
-      "              clientSecret: \"${var.intuit_client_secret}\"",
-      "              redirectUri: \"${var.intuit_redirect_uri}\"",
-      "              encryptionKey: \"${var.encryption_key}\"",
       "          financial-chart:",
       "            namespace: \"fc\"",
       "            fc:",
