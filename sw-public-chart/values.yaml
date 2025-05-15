@@ -72,6 +72,6 @@ sw-private-chart:
   financial-chart:
     namespace: "fc"
     fc:
-      fc_version: "2025.05.3"
+      fc_version: "2025.05.4"
       fc_frontend_image: "images/financial-close-service/financial-close-frontend"
       fc_service_image: "images/financial-close-service/financial-close-backend"
