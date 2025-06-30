@@ -1,0 +1,67 @@
+name: Update Chart Versions from Private Repo
+on:
+  repository_dispatch:
+    types: [chart-version-update]
+
+jobs:
+  update-chart-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: dev
+
+      - name: Verify we're on dev branch
+        run: |
+          CURRENT_BRANCH=$(git branch --show-current)
+          if [ "$CURRENT_BRANCH" != "dev" ]; then
+            echo "Error: This workflow should only run on the dev branch. Current branch: $CURRENT_BRANCH"
+            exit 1
+          fi
+          echo "✅ Confirmed we're on dev branch"
+
+      - name: Update sw-private-chart dependency version
+        if: ${{ github.event.client_payload.sw_private_version }}
+        run: |
+          if [ -f "./sw-public-chart/Chart.yaml" ]; then
+            echo "Updating sw-private-chart dependency version to ${{ github.event.client_payload.sw_private_version }}"
+            sed -i "s/^    version: .*/    version: \"${{ github.event.client_payload.sw_private_version }}\"/" "./sw-public-chart/Chart.yaml"
+            echo "Updated sw-private-chart dependency version"
+          else
+            echo "Warning: sw-public-chart/Chart.yaml not found"
+          fi
+
+      - name: Update sw-public-customer-chart version
+        if: ${{ github.event.client_payload.customer_version }}
+        run: |
+          if [ -f "./sw-public-customer-chart/Chart.yaml" ]; then
+            echo "Updating sw-public-customer-chart version to ${{ github.event.client_payload.customer_version }}"
+            sed -i "s/^version: .*/version: ${{ github.event.client_payload.customer_version }}/" "./sw-public-customer-chart/Chart.yaml"
+            echo "Updated sw-public-customer-chart version"
+          else
+            echo "Warning: sw-public-customer-chart/Chart.yaml not found"
+          fi
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Double-check we're still on dev branch before pushing
+          CURRENT_BRANCH=$(git branch --show-current)
+          if [ "$CURRENT_BRANCH" != "dev" ]; then
+            echo "Error: Cannot push changes - not on dev branch. Current branch: $CURRENT_BRANCH"
+            exit 1
+          fi
+          
+          # Check if there are any changes to commit
+          if git diff --quiet; then
+            echo "No changes to commit"
+          else
+            git add .
+            git commit -m "Auto-update chart versions from ${{ github.event.client_payload.source_repo }}@${{ github.event.client_payload.source_branch }} (triggered by ${{ github.event.client_payload.triggered_by }})"
+            git push origin dev
+            echo "Successfully updated chart versions on dev branch"
+          fi 
