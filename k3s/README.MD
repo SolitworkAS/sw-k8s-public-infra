@@ -61,9 +61,45 @@ k3s/
 - Azure subscription with appropriate permissions
 - Terraform (v1.1.0 or later)
 - Azure CLI
-- SSH key pair
 - Container registry credentials
 - SSO provider credentials (if using SSO)
+
+## SSH Key Generation
+Before deployment, you need to generate an SSH key pair in .pem format for secure access to the VMs.
+
+### Generate SSH Key Pair
+1. **Create SSH key pair**:
+   ```bash
+   # Generate private key in PEM format
+   ssh-keygen -t rsa -b 4096 -m PEM -f ~/.ssh/k3s_key -N ""
+   
+   # This creates:
+   # ~/.ssh/k3s_key (private key)
+   # ~/.ssh/k3s_key.pub (public key)
+   ```
+
+2. **Extract public key content**:
+   ```bash
+   # Display public key content (copy this for terraform.tfvars)
+   cat ~/.ssh/k3s_key.pub
+   ```
+
+3. **Extract private key content**:
+   ```bash
+   # Display private key content (copy this for terraform.tfvars)
+   cat ~/.ssh/k3s_key
+   ```
+
+**Important**: 
+- Keep your private key secure and never share it
+- The private key should start with `-----BEGIN RSA PRIVATE KEY-----`
+- The public key should start with `ssh-rsa`
+
+### Windows Users
+If you're using Windows, you can generate SSH keys using:
+- **PowerShell/Command Prompt**: Use the `ssh-keygen` command (available in Windows 10+)
+- **Git Bash**: Use the same Unix commands above
+- **PuTTYgen**: Generate and export in OpenSSH format
 
 ## Installation
 1. Clone the repository
