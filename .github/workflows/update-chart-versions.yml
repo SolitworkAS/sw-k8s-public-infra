@@ -21,25 +21,25 @@ jobs:
             exit 1
           fi
           echo "✅ Confirmed we're on dev branch"
-
+          
       - name: Update sw-private-chart dependency version
         if: ${{ github.event.client_payload.sw_private_version }}
         run: |
           if [ -f "./sw-public-chart/Chart.yaml" ]; then
             echo "Updating sw-private-chart dependency version to ${{ github.event.client_payload.sw_private_version }}"
-            sed -i "s/^    version: .*/    version: \"${{ github.event.client_payload.sw_private_version }}\"/" "./sw-public-chart/Chart.yaml"
+            sed -i "/name: sw-private-chart/,/version:/ s/^    version: .*/    version: \"${{ github.event.client_payload.sw_private_version }}\"/" "./sw-public-chart/Chart.yaml"
             echo "Updated sw-private-chart dependency version"
           else
             echo "Warning: sw-public-chart/Chart.yaml not found"
           fi
 
-      - name: Update sw-public-customer-chart version
+      - name: Update customer-chart dependency version
         if: ${{ github.event.client_payload.customer_version }}
         run: |
           if [ -f "./sw-public-customer-chart/Chart.yaml" ]; then
-            echo "Updating sw-public-customer-chart version to ${{ github.event.client_payload.customer_version }}"
-            sed -i "s/^version: .*/version: ${{ github.event.client_payload.customer_version }}/" "./sw-public-customer-chart/Chart.yaml"
-            echo "Updated sw-public-customer-chart version"
+            echo "Updating customer-chart dependency version to ${{ github.event.client_payload.customer_version }}"
+            sed -i "/name: customer-chart/,/version:/ s/^    version: .*/    version: \"${{ github.event.client_payload.customer_version }}\"/" "./sw-public-customer-chart/Chart.yaml"
+            echo "Updated customer-chart dependency version"
           else
             echo "Warning: sw-public-customer-chart/Chart.yaml not found"
           fi
