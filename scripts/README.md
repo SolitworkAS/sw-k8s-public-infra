@@ -46,26 +46,7 @@ curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/mai
 curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/main/scripts/install.sh | bash
 ```
 
-### Windows Systems
 
-#### Option 1: PowerShell Script
-```powershell
-# Run PowerShell as Administrator and execute:
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-.\install.ps1
-```
-
-#### Option 2: Batch File
-```cmd
-# Run Command Prompt as Administrator and execute:
-install.bat
-```
-
-#### Option 3: Manual Download
-1. Download `k3s-setup.sh` from the repository
-2. Transfer to your Linux system
-3. Make executable: `chmod +x k3s-setup.sh`
-4. Run: `./k3s-setup.sh`
 
 ## Configuration Parameters
 
@@ -199,6 +180,4 @@ For issues or questions:
 
 - `k3s-setup.sh` - Main K3S setup script (Linux/Unix)
 - `install.sh` - Linux/Unix installation helper script
-- `install.bat` - Windows batch file for downloading the script
-- `install.ps1` - Windows PowerShell script for downloading the script
 - `README.md` - This documentation file 
