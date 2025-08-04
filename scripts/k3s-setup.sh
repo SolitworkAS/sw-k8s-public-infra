@@ -224,80 +224,7 @@ install_k3s() {
     print_success "K3S installed successfully"
 }
 
-# Function to apply K3S hardening
-apply_k3s_hardening() {
-    print_status "Applying K3S hardening..."
-    
-    # Stop K3S service
-    sudo systemctl stop k3s || true
-    
-    # Kernel sysctl configuration
-    echo 'vm.panic_on_oom=0
-vm.overcommit_memory=1
-kernel.panic=10
-kernel.panic_on_oops=1' | sudo tee /etc/sysctl.d/90-kubelet.conf > /dev/null
-    sudo sysctl -p /etc/sysctl.d/90-kubelet.conf
-    
-    # Create PSA configuration
-    sudo mkdir -p /var/lib/rancher/k3s/server
-    sudo tee /var/lib/rancher/k3s/server/psa.yaml > /dev/null <<EOF
-apiVersion: apiserver.config.k8s.io/v1
-kind: AdmissionConfiguration
-plugins:
-  - name: PodSecurity
-    configuration:
-      apiVersion: pod-security.admission.config.k8s.io/v1beta1
-      kind: PodSecurityConfiguration
-      defaults:
-        enforce: "restricted"
-        enforce-version: "latest"
-        audit: "restricted"
-        audit-version: "latest"
-        warn: "restricted"
-        warn-version: "latest"
-      exemptions:
-        usernames: []
-        runtimeClasses: []
-        namespaces: [kube-system, cis-operator-system]
-EOF
-    
-    # Create audit policy
-    sudo tee /var/lib/rancher/k3s/server/audit.yaml > /dev/null <<EOF
-apiVersion: audit.k8s.io/v1
-kind: Policy
-rules:
-  - level: Metadata
-EOF
-    
-    # Create K3S main configuration
-    sudo mkdir -p /etc/rancher/k3s
-    sudo tee /etc/rancher/k3s/config.yaml > /dev/null <<EOF
-protect-kernel-defaults: true
-secrets-encryption: true
 
-kube-apiserver-arg:
-  - "admission-control-config-file=/var/lib/rancher/k3s/server/psa.yaml"
-  - "audit-log-path=/var/lib/rancher/k3s/server/logs/audit.log"
-  - "audit-policy-file=/var/lib/rancher/k3s/server/audit.yaml"
-  - "audit-log-maxage=30"
-  - "audit-log-maxbackup=10"
-  - "audit-log-maxsize=100"
-
-kube-controller-manager-arg:
-  - "terminated-pod-gc-threshold=10"
-
-kubelet-arg:
-  - "streaming-connection-idle-timeout=5m"
-  - "tls-cipher-suites=TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305"
-EOF
-    
-    # Reload daemon and start K3S
-    sudo systemctl daemon-reload
-    sleep 5
-    sudo systemctl start k3s
-    
-    print_success "K3S hardening applied successfully"
-}
 
 # Function to install Helm
 install_helm() {
@@ -591,7 +518,6 @@ main() {
     
     # Install and configure components
     install_k3s
-    apply_k3s_hardening
     install_helm
     install_argocd
     install_k9s
