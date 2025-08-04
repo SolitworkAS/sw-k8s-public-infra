@@ -215,13 +215,44 @@ install_k3s() {
     # Install K3S
     curl -sfL https://get.k3s.io | K3S_TOKEN=$K3S_TOKEN sh -s - server --cluster-init --write-kubeconfig-mode 644
     
+    # Wait for K3S to start
+    print_status "Waiting for K3S to start..."
+    sleep 30
+    
+    # Check if K3S is running
+    if ! sudo systemctl is-active --quiet k3s; then
+        print_error "K3S failed to start. Checking logs..."
+        sudo journalctl -u k3s --no-pager -n 20
+        exit 1
+    fi
+    
+    # Wait for API to be ready
+    print_status "Waiting for K3S API to be ready..."
+    timeout=120
+    counter=0
+    while [ $counter -lt $timeout ]; do
+        if kubectl get nodes &>/dev/null; then
+            break
+        fi
+        sleep 2
+        counter=$((counter + 2))
+        echo -n "."
+    done
+    echo
+    
+    if [ $counter -ge $timeout ]; then
+        print_error "K3S API failed to become ready within $timeout seconds"
+        sudo journalctl -u k3s --no-pager -n 20
+        exit 1
+    fi
+    
     # Configure firewall
     sudo ufw allow 6443/tcp
     sudo ufw allow 2379/tcp
     sudo ufw allow 2380/tcp
     sudo ufw reload
     
-    print_success "K3S installed successfully"
+    print_success "K3S installed and running successfully"
 }
 
 
@@ -229,10 +260,6 @@ install_k3s() {
 # Function to install Helm
 install_helm() {
     print_status "Installing Helm..."
-    
-    # Wait for K3S to be ready
-    echo "Waiting for K3S to be fully ready..."
-    sleep 60
     
     # Install Helm
     curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
@@ -246,6 +273,13 @@ install_helm() {
 # Function to install ArgoCD
 install_argocd() {
     print_status "Installing ArgoCD..."
+    
+    # Verify K3S is still running
+    if ! kubectl get nodes &>/dev/null; then
+        print_error "K3S is not responding. Checking status..."
+        sudo systemctl status k3s
+        exit 1
+    fi
     
     # Create namespace
     kubectl create namespace argocd || true
@@ -264,6 +298,7 @@ install_argocd() {
         --set applicationSet.metrics.enabled=true
     
     # Wait for ArgoCD to be ready
+    print_status "Waiting for ArgoCD to be ready..."
     sleep 60
     
     print_success "ArgoCD installed successfully"
