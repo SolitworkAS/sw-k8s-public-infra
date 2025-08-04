@@ -25,7 +25,7 @@ fi
 
 # Download the main script
 echo "Downloading K3S setup script..."
-curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/Script/scripts/install.sh -o k3s-setup.sh
+curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/Script/scripts/k3s-setup.sh -o k3s-setup.sh
 
 # Make it executable
 chmod +x k3s-setup.sh
