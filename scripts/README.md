@@ -41,10 +41,7 @@ chmod +x k3s-setup.sh
 curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/main/scripts/k3s-setup.sh | bash
 ```
 
-#### Option 3: Using the Install Script
-```bash
-curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/main/scripts/install.sh | bash
-```
+
 
 
 
@@ -179,5 +176,4 @@ For issues or questions:
 ## Files in this Directory
 
 - `k3s-setup.sh` - Main K3S setup script (Linux/Unix)
-- `install.sh` - Linux/Unix installation helper script
 - `README.md` - This documentation file 

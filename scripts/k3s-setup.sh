@@ -37,12 +37,17 @@ prompt_input() {
     local error_message="$3"
     local default_value="$4"
     
+    # Force output to be unbuffered
+    echo -n "$prompt" >&2
+    
     while true; do
         if [ -n "$default_value" ]; then
-            read -p "$prompt [$default_value]: " input
+            echo -n " [$default_value]: " >&2
+            read -r input
             input=${input:-$default_value}
         else
-            read -p "$prompt: " input
+            echo -n ": " >&2
+            read -r input
         fi
         
         if [ -z "$input" ]; then
@@ -55,7 +60,7 @@ prompt_input() {
                 echo "$input"
                 return 0
             else
-                print_error "$error_message"
+                print_error "$error_message (input: '$input', regex: '$validation_regex')"
                 continue
             fi
         else
@@ -72,10 +77,12 @@ prompt_boolean() {
     
     while true; do
         if [ -n "$default_value" ]; then
-            read -p "$prompt (y/n) [$default_value]: " input
+            echo -n "$prompt (y/n) [$default_value]: " >&2
+            read -r input
             input=${input:-$default_value}
         else
-            read -p "$prompt (y/n): " input
+            echo -n "$prompt (y/n): " >&2
+            read -r input
         fi
         
         case $input in
@@ -147,7 +154,7 @@ collect_user_input() {
     CONTAINER_REGISTRY_PASSWORD=$(prompt_input "Enter container registry password" "^.+$" "Password cannot be empty")
     
     # Application admin variables
-    APP_ADMIN_EMAIL=$(prompt_input "Enter application admin email" "^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$" "Must be a valid email address")
+    APP_ADMIN_EMAIL=$(prompt_input "Enter application admin email" "^[^@]+@[^@]+\.[^@]+$" "Must be a valid email address")
     APP_ADMIN_FIRST_NAME=$(prompt_input "Enter application admin first name" "^.+$" "First name cannot be empty")
     APP_ADMIN_LAST_NAME=$(prompt_input "Enter application admin last name" "^.+$" "Last name cannot be empty")
     
@@ -567,6 +574,17 @@ main() {
     
     # Check prerequisites
     check_prerequisites
+    
+    # Check if running from pipe and provide alternative
+    if [ ! -t 0 ]; then
+        echo "Detected pipe execution. For better experience, download and run the script directly:"
+        echo "curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/Script/scripts/k3s-setup.sh -o k3s-setup.sh"
+        echo "chmod +x k3s-setup.sh"
+        echo "./k3s-setup.sh"
+        echo ""
+        echo "Continuing with pipe execution..."
+        echo ""
+    fi
     
     # Collect user input
     collect_user_input
