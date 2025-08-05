@@ -1,179 +1,169 @@
-# K3S Setup Script
+# K3S Setup Scripts
 
-This script automates the complete installation and configuration of a K3S cluster with ArgoCD, Helm, K9s, and all necessary components based on the Terraform configuration.
+This directory contains improved scripts for setting up K3S, ArgoCD, and related components on Ubuntu systems.
 
-## Overview
+## Scripts Overview
 
-The `k3s-setup.sh` script converts all the functionality from the Terraform configuration (`k3s/main/k3s/main.tf`) into a single bash script that:
+### 1. `k3s-setup.sh` - Main Setup Script
+The main script that automates the complete K3S installation and configuration process.
 
-1. Prompts for all necessary configuration parameters
-2. Installs and configures K3S with security hardening
-3. Installs Helm, ArgoCD, and K9s
-4. Configures container registry authentication
-5. Sets up ArgoCD repositories
-6. Deploys the complete application stack
+**Key Improvements:**
+- **Universal Network Support**: Works on any Ubuntu machine, not just Azure VMs
+- **Smart IP Detection**: Automatically detects public and private IP addresses
+- **nip.io Integration**: Automatically configures nip.io domains for local development
+- **Enhanced Error Handling**: Better error messages and troubleshooting information
+- **Port Availability Checks**: Verifies required ports are available before installation
+- **Firewall Configuration**: Automatically configures UFW firewall rules
 
-## Prerequisites
+### 2. `network-setup.sh` - Network Configuration Helper
+A companion script that helps diagnose and configure network settings.
 
-- Ubuntu/Debian system (tested on Ubuntu 24.04 LTS)
+**Features:**
+- Network interface detection
+- Port availability checking
+- External connectivity testing
+- Firewall configuration
+- nip.io resolution testing
+- Troubleshooting tips
+
+## Usage
+
+### Prerequisites
+- Ubuntu/Debian system
+- Non-root user with sudo privileges
 - Internet connectivity
-- Sudo privileges
-- At least 4GB RAM and 20GB disk space
 
-## Quick Start
+### Quick Start
 
-### Linux/Unix Systems
+1. **Download the scripts:**
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/main/scripts/k3s-setup.sh -o k3s-setup.sh
+   curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/main/scripts/network-setup.sh -o network-setup.sh
+   chmod +x k3s-setup.sh network-setup.sh
+   ```
 
-#### Option 1: Direct Download and Execute
-```bash
-# Download the script
-curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/main/scripts/k3s-setup.sh -o k3s-setup.sh
+2. **Optional: Run network setup first (recommended for troubleshooting):**
+   ```bash
+   ./network-setup.sh
+   ```
 
-# Make it executable
-chmod +x k3s-setup.sh
+3. **Run the main setup script:**
+   ```bash
+   ./k3s-setup.sh
+   ```
 
-# Run the script
-./k3s-setup.sh
-```
+### Network Scenarios
 
-#### Option 2: One-liner Execution
-```bash
-curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/main/scripts/k3s-setup.sh | bash
-```
+#### Public Network (Direct Internet Access)
+- Script automatically detects public IP
+- Uses standard domain configuration
+- Full external access available
 
+#### Private Network (Behind NAT/Firewall)
+- Script detects private IP and warns user
+- Automatically configures nip.io domains
+- Provides local access URLs
+- Suggests port forwarding options
 
-
-
+#### Local Development
+- Uses local IP addresses
+- Configures nip.io for local domain resolution
+- Provides troubleshooting guidance
 
 ## Configuration Parameters
 
-The script will prompt you for the following parameters:
+The script will prompt for the following parameters:
 
 ### Required Parameters
-- **Customer**: Shorthand abbreviation (lowercase letters and numbers only)
-- **Container Registry Username**: Registry authentication username
-- **Container Registry Password**: Registry authentication password
-- **Application Admin Email**: Valid email address for admin user
-- **Application Admin First Name**: Admin user's first name
-- **Application Admin Last Name**: Admin user's last name
+- **Customer**: Lowercase letters and numbers only
+- **Domain**: Domain name (or app name for nip.io)
+- **Container Registry**: Registry URL, username, and password
+- **Application Admin**: Email, first name, and last name
 
-### Optional Parameters (with defaults)
-- **Domain**: Domain name (default: afcsoftware.com)
-- **Self-hosted**: Whether this is self-hosted (default: true)
-- **Container Registry URL**: Registry URL (default: imagesdevregistry.azurecr.io)
+### Optional Parameters
 - **K3S Token**: Auto-generated if not provided
-- **Deployment Revision**: Git revision to deploy (default: HEAD)
-- **Deploy DA App**: Whether to deploy DA application (default: false)
-- **Deploy FC App**: Whether to deploy FC application (default: false)
-
-### OAuth/SSO Parameters (optional)
-- GitHub Client ID and Secret
-- SSO Issuer, Client ID, and Secret
-- Microsoft Client ID and Secret
-- Intuit Client ID, Secret, and Redirect URI
-- Encryption Key
-
-## What the Script Does
-
-1. **Prerequisites Check**: Verifies system requirements and installs necessary packages
-2. **User Input Collection**: Prompts for all configuration parameters with validation
-3. **K3S Installation**: Installs K3S with cluster initialization
-4. **Security Hardening**: Applies PSA policies, audit logging, and kernel hardening
-5. **Helm Installation**: Installs Helm package manager
-6. **ArgoCD Installation**: Installs ArgoCD with metrics enabled
-7. **K9s Installation**: Installs K9s cluster management tool
-8. **Registry Authentication**: Logs into the container registry
-9. **Repository Configuration**: Sets up ArgoCD repositories (public and private)
-10. **Application Deployment**: Deploys the complete application stack via ArgoCD
+- **OAuth/SSO Configuration**: GitHub, Microsoft, Intuit, and custom SSO settings
+- **Deployment Options**: DA and FC app deployment flags
 
 ## Generated Credentials
 
 The script automatically generates secure random credentials for:
-
 - PostgreSQL database, username, and password
 - MinIO root user and password
-- ArgoWorkflows username and password
-- Financial Close user, password, and database
-- BI Developer role
+- ArgoCD workflows credentials
+- Financial Close app credentials
 
-## Output and Access Information
+## Access Information
 
-After successful completion, the script displays:
+After successful installation:
 
-- Configuration summary
-- Generated credentials
-- Access information including:
-  - Kubeconfig location
-  - ArgoCD UI URL
-  - Next steps for cluster management
+### ArgoCD UI
+- **Public Network**: `http://<public-ip>:30080`
+- **Private Network**: `http://<local-ip>:30080`
 
-## Security Features
+### Kubeconfig
+- Location: `/home/<user>/kubeconfig.yaml`
+- Usage: `export KUBECONFIG=/home/<user>/kubeconfig.yaml`
 
-- Pod Security Admission (PSA) with restricted policy
-- Audit logging enabled
-- Secrets encryption
-- Kernel hardening
-- Firewall configuration (UFW)
-- TLS cipher suite restrictions
+### Domain Access
+- **Public Network**: Uses configured domain
+- **Private Network**: Uses nip.io domain (e.g., `myapp.192.168.1.100.nip.io`)
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Permission Denied**: Ensure the script is executable (`chmod +x k3s-setup.sh`)
-2. **Network Issues**: Verify internet connectivity and firewall settings
-3. **Disk Space**: Ensure sufficient disk space (minimum 20GB recommended)
-4. **Memory**: Ensure sufficient RAM (minimum 4GB recommended)
+1. **K3S fails to start**
+   - Check system resources: `free -h && df -h`
+   - Check K3S logs: `sudo journalctl -u k3s -f`
+   - Disable swap: `sudo swapoff -a`
 
-### Logs and Debugging
+2. **ArgoCD not accessible**
+   - Check pods: `kubectl get pods -n argocd`
+   - Check service: `kubectl get svc -n argocd`
+   - Check firewall: `sudo ufw status`
 
-- K3S logs: `sudo journalctl -u k3s -f`
-- ArgoCD logs: `kubectl logs -n argocd -l app.kubernetes.io/name=argocd-server`
-- Application logs: `kubectl logs -n <namespace> -l app=<app-name>`
+3. **nip.io domains not working**
+   - Test resolution: `nslookup test.127.0.0.1.nip.io`
+   - Use local IP directly if needed
+   - Check `/etc/hosts` for local development
 
-### Manual Verification
+### Network-Specific Issues
 
-```bash
-# Check K3S status
-sudo systemctl status k3s
+#### Private Network
+- Consider SSH port forwarding: `ssh -L 30080:localhost:30080 user@server`
+- Use ngrok for temporary access: `ngrok http 30080`
+- Configure router port forwarding
 
-# Check cluster nodes
-kubectl get nodes
+#### Corporate Network
+- Check proxy settings
+- Verify firewall allows required ports
+- Contact network administrator if needed
 
-# Check ArgoCD pods
-kubectl get pods -n argocd
+## Security Considerations
 
-# Check all namespaces
-kubectl get namespaces
-```
+- Script runs as non-root user
+- UFW firewall is automatically configured
+- Random credentials are generated for all services
+- K3S token is auto-generated if not provided
+- Sensitive data is not logged
 
-## Post-Installation
+## Differences from Azure Terraform
 
-After successful installation:
+The script provides the same functionality as the Azure Terraform configuration but works on any Ubuntu machine:
 
-1. **Access ArgoCD UI**: Navigate to `http://<public-ip>:8080`
-2. **Monitor Deployments**: Use ArgoCD UI or `kubectl get applications -n argocd`
-3. **Cluster Management**: Use K9s (`k9s`) for interactive cluster management
-4. **Export Kubeconfig**: `export KUBECONFIG=/home/$USER/kubeconfig.yaml`
+| Feature | Azure Terraform | Script |
+|---------|----------------|---------|
+| IP Detection | Uses Azure public IP | Multi-method detection |
+| Network Config | Azure-specific | Universal |
+| Domain Setup | Manual configuration | Automatic nip.io for private networks |
+| Firewall | Azure NSG | UFW |
+| Installation | VM extension | Direct installation |
 
 ## Support
 
 For issues or questions:
-1. Check the troubleshooting section above
-2. Review the script logs and Kubernetes logs
-3. Ensure all prerequisites are met
-4. Verify network connectivity and firewall settings
-
-## Script Features
-
-- **Input Validation**: All user inputs are validated with appropriate regex patterns
-- **Error Handling**: Comprehensive error handling with colored output
-- **Progress Indicators**: Clear status messages throughout the process
-- **Automatic Credential Generation**: Secure random generation of all required credentials
-- **Idempotent Operations**: Safe to re-run if interrupted
-- **Colored Output**: Easy-to-read status messages with color coding
-
-## Files in this Directory
-
-- `k3s-setup.sh` - Main K3S setup script (Linux/Unix)
-- `README.md` - This documentation file 
+1. Run `./network-setup.sh` for diagnostics
+2. Check the troubleshooting section above
+3. Review K3S and ArgoCD logs
+4. Ensure all prerequisites are met 

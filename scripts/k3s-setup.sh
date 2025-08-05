@@ -30,6 +30,73 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Function to detect network configuration
+detect_network_config() {
+    print_status "Detecting network configuration..."
+    
+    # Try multiple methods to get the IP address
+    local public_ip=""
+    local private_ip=""
+    local local_ip=""
+    
+    # Get local IP address
+    if command -v ip &> /dev/null; then
+        local_ip=$(ip route get 1.1.1.1 | awk '{print $7; exit}' 2>/dev/null || echo "")
+    fi
+    
+    # Get private IP address
+    if [ -z "$local_ip" ]; then
+        local_ip=$(hostname -I | awk '{print $1}' 2>/dev/null || echo "")
+    fi
+    
+    # Try to get public IP (with timeout and fallback)
+    print_status "Attempting to detect public IP address..."
+    
+    # Method 1: ifconfig.me
+    if command -v curl &> /dev/null; then
+        public_ip=$(timeout 10 curl -s ifconfig.me 2>/dev/null || echo "")
+    fi
+    
+    # Method 2: ipinfo.io
+    if [ -z "$public_ip" ] && command -v curl &> /dev/null; then
+        public_ip=$(timeout 10 curl -s ipinfo.io/ip 2>/dev/null || echo "")
+    fi
+    
+    # Method 3: icanhazip.com
+    if [ -z "$public_ip" ] && command -v curl &> /dev/null; then
+        public_ip=$(timeout 10 curl -s icanhazip.com 2>/dev/null || echo "")
+    fi
+    
+    # Method 4: checkip.amazonaws.com
+    if [ -z "$public_ip" ] && command -v curl &> /dev/null; then
+        public_ip=$(timeout 10 curl -s checkip.amazonaws.com 2>/dev/null || echo "")
+    fi
+    
+    # If we can't get public IP, use local IP
+    if [ -z "$public_ip" ]; then
+        print_warning "Could not detect public IP address. Using local IP: $local_ip"
+        public_ip="$local_ip"
+    fi
+    
+    # Check if we're behind NAT or on a private network
+    local is_private=false
+    if [[ "$public_ip" =~ ^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.) ]]; then
+        is_private=true
+        print_warning "Detected private IP address: $public_ip"
+        print_warning "This appears to be a private network. External access may be limited."
+    fi
+    
+    # Store the detected IP
+    DETECTED_IP="$public_ip"
+    LOCAL_IP="$local_ip"
+    IS_PRIVATE_NETWORK="$is_private"
+    
+    print_success "Network configuration detected:"
+    echo "  Public/External IP: $DETECTED_IP"
+    echo "  Local IP: $LOCAL_IP"
+    echo "  Private Network: $IS_PRIVATE_NETWORK"
+}
+
 # Function to prompt for input with validation
 prompt_input() {
     local prompt="$1"
@@ -136,6 +203,43 @@ check_prerequisites() {
         sudo apt install -y wget
     fi
     
+    # Check if timeout is available
+    if ! command -v timeout &> /dev/null; then
+        print_status "Installing coreutils (for timeout)..."
+        sudo apt update
+        sudo apt install -y coreutils
+    fi
+    
+    # Check for common K3S startup issues
+    print_status "Checking system requirements..."
+    
+    # Check if swap is enabled (K3S doesn't like swap)
+    if swapon --show | grep -q .; then
+        print_warning "Swap is enabled. K3S may have issues. Consider disabling swap."
+        print_warning "To disable swap: sudo swapoff -a && sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab"
+    fi
+    
+    # Check available memory
+    mem_total=$(free -m | awk 'NR==2{printf "%.0f", $2}')
+    if [ "$mem_total" -lt 2048 ]; then
+        print_warning "System has less than 2GB RAM. K3S may have issues."
+    fi
+    
+    # Check available disk space
+    disk_free=$(df / | awk 'NR==2{printf "%.0f", $4}')
+    if [ "$disk_free" -lt 10240 ]; then
+        print_warning "Less than 10GB free disk space. K3S may have issues."
+    fi
+    
+    # Check if ports are available
+    print_status "Checking port availability..."
+    local ports=(6443 8080 80 443)
+    for port in "${ports[@]}"; do
+        if netstat -tuln 2>/dev/null | grep -q ":$port "; then
+            print_warning "Port $port is already in use. This may cause conflicts."
+        fi
+    done
+    
     print_success "Prerequisites check completed"
 }
 
@@ -143,9 +247,22 @@ check_prerequisites() {
 collect_user_input() {
     print_status "Collecting configuration parameters..."
     
+    # Detect network configuration first
+    detect_network_config
+    
     # General variables
     CUSTOMER=$(prompt_input "Enter customer shorthand (lowercase letters and numbers only)" "^[a-z0-9]+$" "Customer must only contain lowercase letters and numbers")
-    DOMAIN=$(prompt_input "Enter domain (e.g., afcsoftware.com)" "" "" "afcsoftware.com")
+    
+    # Domain configuration
+    if [ "$IS_PRIVATE_NETWORK" = "true" ]; then
+        print_warning "Private network detected. Using nip.io for local development."
+        DOMAIN=$(prompt_input "Enter domain for nip.io (e.g., myapp)" "" "" "myapp")
+        DOMAIN="${DOMAIN}.${DETECTED_IP}.nip.io"
+        print_status "Using nip.io domain: $DOMAIN"
+    else
+        DOMAIN=$(prompt_input "Enter domain (e.g., afcsoftware.com)" "" "" "afcsoftware.com")
+    fi
+    
     SELF_HOSTED=$(prompt_boolean "Is this self-hosted?" "true")
     
     # Container registry variables
@@ -212,8 +329,8 @@ install_k3s() {
     sudo apt update
     sudo apt install -y ufw
     
-    # Install K3S
-    curl -sfL https://get.k3s.io | K3S_TOKEN=$K3S_TOKEN sh -s - server --cluster-init --write-kubeconfig-mode 644
+    # Install K3S with proper configuration
+    curl -sfL https://get.k3s.io | K3S_TOKEN=$K3S_TOKEN sh -s - server --cluster-init --write-kubeconfig-mode 644 --bind-address 0.0.0.0 --advertise-address $LOCAL_IP
     
     # Wait for K3S to start
     print_status "Waiting for K3S to start..."
@@ -222,7 +339,21 @@ install_k3s() {
     # Check if K3S is running
     if ! sudo systemctl is-active --quiet k3s; then
         print_error "K3S failed to start. Checking logs..."
-        sudo journalctl -u k3s --no-pager -n 20
+        sudo journalctl -u k3s --no-pager -n 50
+        print_error "K3S startup failed. Please check the logs above for details."
+        
+        # Additional diagnostics
+        print_status "Additional diagnostics:"
+        echo "System memory:"
+        free -h
+        echo
+        echo "Disk space:"
+        df -h
+        echo
+        echo "K3S service status:"
+        sudo systemctl status k3s --no-pager
+        echo
+        print_error "K3S startup failed. Please check the logs and system resources above."
         exit 1
     fi
     
@@ -250,12 +381,13 @@ install_k3s() {
     sudo ufw allow 6443/tcp
     sudo ufw allow 2379/tcp
     sudo ufw allow 2380/tcp
+    sudo ufw allow 8080/tcp  # ArgoCD UI
+    sudo ufw allow 80/tcp    # HTTP
+    sudo ufw allow 443/tcp   # HTTPS
     sudo ufw reload
     
     print_success "K3S installed and running successfully"
 }
-
-
 
 # Function to install Helm
 install_helm() {
@@ -288,14 +420,16 @@ install_argocd() {
     helm repo add argo https://argoproj.github.io/argo-helm
     helm repo update
     
-    # Install ArgoCD
+    # Install ArgoCD with NodePort for external access
     export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
     helm upgrade --install argocd argo/argo-cd \
         --namespace argocd \
         --set server.metrics.enabled=true \
         --set controller.metrics.enabled=true \
         --set repoServer.metrics.enabled=true \
-        --set applicationSet.metrics.enabled=true
+        --set applicationSet.metrics.enabled=true \
+        --set server.service.type=NodePort \
+        --set server.service.nodePort=30080
     
     # Wait for ArgoCD to be ready
     print_status "Waiting for ArgoCD to be ready..."
@@ -384,9 +518,6 @@ EOF
 deploy_argocd_application() {
     print_status "Deploying ArgoCD application..."
     
-    # Get the public IP address
-    PUBLIC_IP=$(curl -s ifconfig.me)
-    
     # Create ArgoCD application
     kubectl apply -f - <<EOF
 apiVersion: argoproj.io/v1alpha1
@@ -405,7 +536,7 @@ spec:
         global:
           selfhosted: "$CUSTOMER"
           domain: "$DOMAIN"
-          publicIp: "$PUBLIC_IP"
+          publicIp: "$DETECTED_IP"
           container:
             registry: "$CONTAINER_REGISTRY"
             username: "$CONTAINER_REGISTRY_USERNAME"
@@ -504,7 +635,9 @@ display_final_info() {
     echo "Customer: $CUSTOMER"
     echo "Domain: $DOMAIN"
     echo "K3S Token: $K3S_TOKEN"
-    echo "Public IP: $(curl -s ifconfig.me)"
+    echo "Detected IP: $DETECTED_IP"
+    echo "Local IP: $LOCAL_IP"
+    echo "Private Network: $IS_PRIVATE_NETWORK"
     echo
     echo "=== Generated Credentials ==="
     echo "Postgres Database: $POSTGRES_DATABASE"
@@ -515,13 +648,23 @@ display_final_info() {
     echo
     echo "=== Access Information ==="
     echo "Kubeconfig location: /home/$USER/kubeconfig.yaml"
-    echo "ArgoCD UI: http://$(curl -s ifconfig.me):8080"
+    echo "ArgoCD UI: http://$DETECTED_IP:30080"
+    if [ "$IS_PRIVATE_NETWORK" = "true" ]; then
+        echo "Local ArgoCD UI: http://$LOCAL_IP:30080"
+    fi
     echo
     echo "=== Next Steps ==="
     echo "1. Access ArgoCD UI to monitor deployments"
     echo "2. Use 'kubectl get pods -A' to check pod status"
     echo "3. Use 'k9s' for cluster management"
     echo "4. Export KUBECONFIG: export KUBECONFIG=/home/$USER/kubeconfig.yaml"
+    echo
+    if [ "$IS_PRIVATE_NETWORK" = "true" ]; then
+        echo "=== Private Network Notes ==="
+        echo "You are running on a private network. External access may be limited."
+        echo "Consider setting up port forwarding or VPN for external access."
+        echo "The nip.io domain ($DOMAIN) will resolve to your local IP for testing."
+    fi
 }
 
 # Main execution
