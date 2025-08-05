@@ -179,6 +179,83 @@ check_root() {
     fi
 }
 
+# Function to check if K3S is installed
+check_k3s_installed() {
+    if command -v k3s &> /dev/null || [ -f /usr/local/bin/k3s ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Function to check if ArgoCD is installed
+check_argocd_installed() {
+    if kubectl get namespace argocd &>/dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Function to check if Helm is installed
+check_helm_installed() {
+    if command -v helm &> /dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Function to check if K9s is installed
+check_k9s_installed() {
+    if command -v k9s &> /dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Function to show installation status
+show_installation_status() {
+    print_status "Checking current installation status..."
+    echo
+    
+    echo "=== Component Status ==="
+    if check_k3s_installed; then
+        echo "K3S: ✅ Installed"
+        K3S_INSTALLED=true
+    else
+        echo "K3S: ❌ Not installed"
+        K3S_INSTALLED=false
+    fi
+    
+    if check_helm_installed; then
+        echo "Helm: ✅ Installed"
+        HELM_INSTALLED=true
+    else
+        echo "Helm: ❌ Not installed"
+        HELM_INSTALLED=false
+    fi
+    
+    if check_argocd_installed; then
+        echo "ArgoCD: ✅ Installed"
+        ARGOCD_INSTALLED=true
+    else
+        echo "ArgoCD: ❌ Not installed"
+        ARGOCD_INSTALLED=false
+    fi
+    
+    if check_k9s_installed; then
+        echo "K9s: ✅ Installed"
+        K9S_INSTALLED=true
+    else
+        echo "K9s: ❌ Not installed"
+        K9S_INSTALLED=false
+    fi
+    
+    echo
+}
+
 # Function to check prerequisites
 check_prerequisites() {
     print_status "Checking prerequisites..."
@@ -455,10 +532,11 @@ install_k9s() {
     source ~/.bashrc
     source ~/.profile
     
-    # Ensure kubeconfig is readable
-    sudo cp /etc/rancher/k3s/k3s.yaml /home/$USER/kubeconfig.yaml
-    sudo chown $USER:$USER /home/$USER/kubeconfig.yaml
-    sudo chmod 600 /home/$USER/kubeconfig.yaml
+    # Ensure kubeconfig is readable and copy to user's home directory
+    USER_HOME=$(eval echo ~$USER)
+    sudo cp /etc/rancher/k3s/k3s.yaml "$USER_HOME/kubeconfig.yaml"
+    sudo chown $USER:$USER "$USER_HOME/kubeconfig.yaml"
+    sudo chmod 600 "$USER_HOME/kubeconfig.yaml"
     
     print_success "K9s installed successfully"
 }
@@ -647,7 +725,8 @@ display_final_info() {
     echo "MinIO Root Password: $MINIO_ROOT_PASSWORD"
     echo
     echo "=== Access Information ==="
-    echo "Kubeconfig location: /home/$USER/kubeconfig.yaml"
+    USER_HOME=$(eval echo ~$USER)
+    echo "Kubeconfig location: $USER_HOME/kubeconfig.yaml"
     echo "ArgoCD UI: http://$DETECTED_IP:30080"
     if [ "$IS_PRIVATE_NETWORK" = "true" ]; then
         echo "Local ArgoCD UI: http://$LOCAL_IP:30080"
@@ -657,7 +736,7 @@ display_final_info() {
     echo "1. Access ArgoCD UI to monitor deployments"
     echo "2. Use 'kubectl get pods -A' to check pod status"
     echo "3. Use 'k9s' for cluster management"
-    echo "4. Export KUBECONFIG: export KUBECONFIG=/home/$USER/kubeconfig.yaml"
+    echo "4. Export KUBECONFIG: export KUBECONFIG=$USER_HOME/kubeconfig.yaml"
     echo
     if [ "$IS_PRIVATE_NETWORK" = "true" ]; then
         echo "=== Private Network Notes ==="
@@ -691,14 +770,73 @@ main() {
         echo ""
     fi
     
+    # Show current installation status
+    show_installation_status
+    
+    # Check if components are already installed and offer resume options
+    if [ "$K3S_INSTALLED" = "true" ] || [ "$HELM_INSTALLED" = "true" ] || [ "$ARGOCD_INSTALLED" = "true" ] || [ "$K9S_INSTALLED" = "true" ]; then
+        print_warning "Some components are already installed!"
+        echo
+        echo "Options:"
+        echo "1. Continue with installation (skip existing components)"
+        echo "2. Clean up and start fresh"
+        echo "3. Exit"
+        echo
+        echo -n "Select option (1-3): "
+        read -r choice
+        
+        case $choice in
+            1)
+                print_status "Continuing with installation, skipping existing components..."
+                ;;
+            2)
+                print_status "Cleaning up existing installation..."
+                if [ -f "./k3s-cleanup.sh" ]; then
+                    ./k3s-cleanup.sh --cleanup-all
+                else
+                    print_warning "Cleanup script not found. Please run cleanup manually."
+                    exit 1
+                fi
+                ;;
+            3)
+                print_status "Exiting..."
+                exit 0
+                ;;
+            *)
+                print_error "Invalid option, exiting..."
+                exit 1
+                ;;
+        esac
+    fi
+    
     # Collect user input
     collect_user_input
     
-    # Install and configure components
-    install_k3s
-    install_helm
-    install_argocd
-    install_k9s
+    # Install and configure components (skip if already installed)
+    if [ "$K3S_INSTALLED" != "true" ]; then
+        install_k3s
+    else
+        print_status "K3S already installed, skipping..."
+    fi
+    
+    if [ "$HELM_INSTALLED" != "true" ]; then
+        install_helm
+    else
+        print_status "Helm already installed, skipping..."
+    fi
+    
+    if [ "$ARGOCD_INSTALLED" != "true" ]; then
+        install_argocd
+    else
+        print_status "ArgoCD already installed, skipping..."
+    fi
+    
+    if [ "$K9S_INSTALLED" != "true" ]; then
+        install_k9s
+    else
+        print_status "K9s already installed, skipping..."
+    fi
+    
     helm_login
     configure_argocd_repositories
     deploy_argocd_application

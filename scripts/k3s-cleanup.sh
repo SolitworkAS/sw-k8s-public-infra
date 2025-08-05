@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # K3S Cleanup Script
-# This script removes everything installed by the K3S setup script
+# This script removes K3S, ArgoCD, and related components
 
 set -e
 
@@ -12,7 +12,6 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Function to print colored output
 print_status() {
     echo -e "${BLUE}[INFO]${NC} $1"
 }
@@ -29,216 +28,416 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Function to check if running as root
+check_root() {
+    if [ "$EUID" -eq 0 ]; then
+        print_error "This script should not be run as root"
+        exit 1
+    fi
+}
+
 # Function to prompt for confirmation
-confirm_cleanup() {
-    echo "=========================================="
-    echo "           K3S Cleanup Script"
-    echo "=========================================="
-    echo
-    print_warning "This script will remove:"
-    echo "  - K3S cluster and all data"
-    echo "  - ArgoCD and all applications"
-    echo "  - Helm installations"
-    echo "  - K9s"
-    echo "  - All Kubernetes namespaces created"
-    echo "  - All configuration files"
-    echo
-    print_warning "This action is IRREVERSIBLE!"
-    echo
-    
-    read -p "Are you sure you want to continue? (yes/no): " confirm
-    if [[ $confirm != "yes" ]]; then
-        echo "Cleanup cancelled."
-        exit 0
+confirm_action() {
+    local message="$1"
+    echo -n "$message (y/N): "
+    read -r response
+    case $response in
+        [Yy]* ) return 0;;
+        * ) return 1;;
+    esac
+}
+
+# Function to check if K3S is installed
+check_k3s_installed() {
+    if command -v k3s &> /dev/null || [ -f /usr/local/bin/k3s ]; then
+        return 0
+    else
+        return 1
     fi
 }
 
-# Function to stop and remove K3S
-cleanup_k3s() {
-    print_status "Stopping and removing K3S..."
-    
-    # Stop K3S service
-    sudo systemctl stop k3s || true
-    
-    # Remove K3S binary and data
-    sudo /usr/local/bin/k3s-uninstall.sh || true
-    
-    # Remove K3S data directories
-    sudo rm -rf /var/lib/rancher/k3s || true
-    sudo rm -rf /etc/rancher/k3s || true
-    sudo rm -rf /var/lib/kubelet || true
-    
-    # Remove K3S configuration files
-    sudo rm -f /etc/systemd/system/k3s.service || true
-    sudo rm -f /etc/systemd/system/k3s-agent.service || true
-    
-    # Reload systemd
-    sudo systemctl daemon-reload || true
-    
-    print_success "K3S removed successfully"
+# Function to check if ArgoCD is installed
+check_argocd_installed() {
+    if kubectl get namespace argocd &>/dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
 }
 
-# Function to remove Helm
-cleanup_helm() {
-    print_status "Removing Helm..."
-    
-    # Remove Helm binary
-    sudo rm -f /usr/local/bin/helm || true
-    
-    # Remove Helm cache and config
-    rm -rf ~/.helm || true
-    rm -rf ~/.cache/helm || true
-    
-    print_success "Helm removed successfully"
+# Function to check if Helm is installed
+check_helm_installed() {
+    if command -v helm &> /dev/null; then
+        return 0
+    else
+        return 1
+    fi
 }
 
-# Function to remove K9s
-cleanup_k9s() {
-    print_status "Removing K9s..."
-    
-    # Remove K9s package
-    sudo apt remove -y k9s || true
-    sudo apt autoremove -y || true
-    
-    # Remove K9s configuration
-    rm -rf ~/.k9s || true
-    
-    print_success "K9s removed successfully"
+# Function to check if K9s is installed
+check_k9s_installed() {
+    if command -v k9s &> /dev/null; then
+        return 0
+    else
+        return 1
+    fi
 }
 
-# Function to remove ArgoCD and applications
+# Function to cleanup ArgoCD
 cleanup_argocd() {
-    print_status "Removing ArgoCD and applications..."
+    print_status "Cleaning up ArgoCD..."
     
-    # Export KUBECONFIG if it exists
-    if [ -f "/etc/rancher/k3s/k3s.yaml" ]; then
-        export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-    elif [ -f "/home/$USER/kubeconfig.yaml" ]; then
-        export KUBECONFIG=/home/$USER/kubeconfig.yaml
-    fi
-    
-    # Remove ArgoCD applications if kubectl is available
-    if command -v kubectl &> /dev/null; then
-        # Delete all ArgoCD applications
+    if check_argocd_installed; then
+        # Uninstall ArgoCD applications
+        print_status "Removing ArgoCD applications..."
         kubectl delete applications --all -n argocd --ignore-not-found=true || true
         
-        # Delete ArgoCD namespace and all resources
+        # Uninstall ArgoCD
+        print_status "Uninstalling ArgoCD..."
+        helm uninstall argocd -n argocd --ignore-not-found=true || true
+        
+        # Remove ArgoCD namespace
+        print_status "Removing ArgoCD namespace..."
         kubectl delete namespace argocd --ignore-not-found=true || true
         
-        # Delete customer namespaces (common ones)
-        kubectl delete namespace environment --ignore-not-found=true || true
-        kubectl delete namespace argo --ignore-not-found=true || true
-        kubectl delete namespace da --ignore-not-found=true || true
-        kubectl delete namespace fc --ignore-not-found=true || true
+        print_success "ArgoCD cleanup completed"
+    else
+        print_warning "ArgoCD not found, skipping cleanup"
+    fi
+}
+
+# Function to cleanup K3S
+cleanup_k3s() {
+    print_status "Cleaning up K3S..."
+    
+    if check_k3s_installed; then
+        # Stop K3S service
+        print_status "Stopping K3S service..."
+        sudo systemctl stop k3s || true
         
-        # Try to delete customer namespace (if we know the name)
-        if [ -n "$CUSTOMER" ]; then
-            kubectl delete namespace "$CUSTOMER" --ignore-not-found=true || true
-        fi
+        # Disable K3S service
+        print_status "Disabling K3S service..."
+        sudo systemctl disable k3s || true
+        
+        # Remove K3S service file
+        print_status "Removing K3S service file..."
+        sudo rm -f /etc/systemd/system/k3s.service || true
+        
+        # Reload systemd
+        sudo systemctl daemon-reload || true
+        
+        # Remove K3S binary
+        print_status "Removing K3S binary..."
+        sudo rm -f /usr/local/bin/k3s || true
+        
+        # Remove K3S data directory
+        print_status "Removing K3S data directory..."
+        sudo rm -rf /var/lib/rancher/k3s || true
+        
+        # Remove K3S configuration
+        print_status "Removing K3S configuration..."
+        sudo rm -rf /etc/rancher/k3s || true
+        
+        print_success "K3S cleanup completed"
+    else
+        print_warning "K3S not found, skipping cleanup"
     fi
-    
-    print_success "ArgoCD and applications removed successfully"
 }
 
-# Function to remove firewall rules
+# Function to cleanup Helm
+cleanup_helm() {
+    print_status "Cleaning up Helm..."
+    
+    if check_helm_installed; then
+        # Remove Helm binary
+        print_status "Removing Helm..."
+        sudo rm -f /usr/local/bin/helm || true
+        
+        # Remove Helm cache
+        print_status "Removing Helm cache..."
+        rm -rf ~/.cache/helm || true
+        rm -rf ~/.config/helm || true
+        
+        print_success "Helm cleanup completed"
+    else
+        print_warning "Helm not found, skipping cleanup"
+    fi
+}
+
+# Function to cleanup K9s
+cleanup_k9s() {
+    print_status "Cleaning up K9s..."
+    
+    if check_k9s_installed; then
+        # Remove K9s package
+        print_status "Removing K9s..."
+        sudo apt remove -y k9s || true
+        sudo apt autoremove -y || true
+        
+        print_success "K9s cleanup completed"
+    else
+        print_warning "K9s not found, skipping cleanup"
+    fi
+}
+
+# Function to cleanup firewall rules
 cleanup_firewall() {
-    print_status "Removing K3S firewall rules..."
+    print_status "Cleaning up firewall rules..."
     
-    # Remove UFW rules for K3S
-    sudo ufw delete allow 6443/tcp || true
-    sudo ufw delete allow 2379/tcp || true
-    sudo ufw delete allow 2380/tcp || true
-    
-    print_success "Firewall rules removed successfully"
+    if command -v ufw &> /dev/null; then
+        # Remove K3S-related firewall rules
+        print_status "Removing K3S firewall rules..."
+        sudo ufw delete allow 6443/tcp || true
+        sudo ufw delete allow 2379/tcp || true
+        sudo ufw delete allow 2380/tcp || true
+        sudo ufw delete allow 30080/tcp || true
+        
+        print_success "Firewall cleanup completed"
+    else
+        print_warning "UFW not found, skipping firewall cleanup"
+    fi
 }
 
-# Function to remove configuration files
-cleanup_config_files() {
-    print_status "Removing configuration files..."
+# Function to cleanup user files
+cleanup_user_files() {
+    print_status "Cleaning up user files..."
     
-    # Remove kubeconfig files
-    rm -f ~/kubeconfig.yaml || true
-    rm -f ~/.kube/config || true
-    
-    # Remove shell profile additions
-    if [ -f ~/.bashrc ]; then
-        sed -i '/export KUBECONFIG=\/etc\/rancher\/k3s\/k3s.yaml/d' ~/.bashrc || true
-        sed -i '/export KUBECONFIG=\/home\/.*\/kubeconfig.yaml/d' ~/.bashrc || true
+    # Remove kubeconfig
+    USER_HOME=$(eval echo ~$USER)
+    if [ -f "$USER_HOME/kubeconfig.yaml" ]; then
+        print_status "Removing kubeconfig..."
+        rm -f "$USER_HOME/kubeconfig.yaml"
     fi
     
-    if [ -f ~/.profile ]; then
-        sed -i '/export KUBECONFIG=\/etc\/rancher\/k3s\/k3s.yaml/d' ~/.profile || true
-        sed -i '/export KUBECONFIG=\/home\/.*\/kubeconfig.yaml/d' ~/.profile || true
+    # Remove shell profile entries
+    print_status "Removing shell profile entries..."
+    sed -i '/export KUBECONFIG=\/etc\/rancher\/k3s\/k3s.yaml/d' ~/.bashrc || true
+    sed -i '/export KUBECONFIG=\/etc\/rancher\/k3s\/k3s.yaml/d' ~/.profile || true
+    
+    # Remove downloaded files
+    print_status "Removing downloaded files..."
+    rm -f k9s_linux_amd64.deb || true
+    rm -f k3s-setup.sh || true
+    rm -f network-setup.sh || true
+    
+    print_success "User files cleanup completed"
+}
+
+# Function to cleanup containers and images
+cleanup_containers() {
+    print_status "Cleaning up containers and images..."
+    
+    # Stop and remove all containers
+    if command -v ctr &> /dev/null; then
+        print_status "Removing containerd containers..."
+        sudo ctr containers list | awk 'NR>1 {print $1}' | xargs -r sudo ctr containers rm || true
+        sudo ctr images list | awk 'NR>1 {print $1}' | xargs -r sudo ctr images rm || true
     fi
     
-    print_success "Configuration files removed successfully"
+    # Clean up Docker if present
+    if command -v docker &> /dev/null; then
+        print_status "Cleaning up Docker..."
+        docker system prune -af || true
+    fi
+    
+    print_success "Container cleanup completed"
 }
 
-# Function to remove system configurations
-cleanup_system_config() {
-    print_status "Removing system configurations..."
-    
-    # Remove sysctl configurations
-    sudo rm -f /etc/sysctl.d/90-kubelet.conf || true
-    
-    # Remove any remaining K3S related files
-    sudo rm -rf /var/lib/rancher || true
-    sudo rm -rf /opt/k3s || true
-    
-    print_success "System configurations removed successfully"
-}
-
-# Function to prompt for customer name
-get_customer_name() {
+# Function to show installation status
+show_status() {
+    print_status "Checking installation status..."
     echo
-    read -p "Enter the customer name used during setup (or press Enter to skip): " CUSTOMER
+    
+    echo "=== Component Status ==="
+    if check_k3s_installed; then
+        echo "K3S: ✅ Installed"
+    else
+        echo "K3S: ❌ Not installed"
+    fi
+    
+    if check_argocd_installed; then
+        echo "ArgoCD: ✅ Installed"
+    else
+        echo "ArgoCD: ❌ Not installed"
+    fi
+    
+    if check_helm_installed; then
+        echo "Helm: ✅ Installed"
+    else
+        echo "Helm: ❌ Not installed"
+    fi
+    
+    if check_k9s_installed; then
+        echo "K9s: ✅ Installed"
+    else
+        echo "K9s: ❌ Not installed"
+    fi
+    
     echo
 }
 
-# Main cleanup function
-main() {
-    # Confirm cleanup
-    confirm_cleanup
+# Function to resume installation
+resume_installation() {
+    print_status "Resuming K3S installation..."
     
-    # Get customer name for namespace cleanup
-    get_customer_name
+    # Check current status
+    show_status
     
-    print_status "Starting cleanup process..."
+    # Determine where to resume from
+    if ! check_k3s_installed; then
+        print_status "K3S not found, starting from beginning..."
+        echo "Run: ./k3s-setup.sh"
+        return
+    fi
     
-    # Stop and remove ArgoCD first (if kubectl is available)
+    if ! check_helm_installed; then
+        print_status "Helm not found, resuming from Helm installation..."
+        echo "Run: ./k3s-setup.sh (it will skip K3S installation)"
+        return
+    fi
+    
+    if ! check_argocd_installed; then
+        print_status "ArgoCD not found, resuming from ArgoCD installation..."
+        echo "Run: ./k3s-setup.sh (it will skip K3S and Helm installation)"
+        return
+    fi
+    
+    print_success "All components appear to be installed. Check ArgoCD applications."
+}
+
+# Function to perform full cleanup
+full_cleanup() {
+    print_warning "This will remove ALL K3S components and data!"
+    print_warning "This action cannot be undone!"
+    
+    if ! confirm_action "Are you sure you want to proceed with full cleanup?"; then
+        print_status "Cleanup cancelled"
+        exit 0
+    fi
+    
+    print_status "Starting full cleanup..."
+    
+    # Cleanup in reverse order of installation
     cleanup_argocd
-    
-    # Remove K3S
-    cleanup_k3s
-    
-    # Remove Helm
-    cleanup_helm
-    
-    # Remove K9s
     cleanup_k9s
-    
-    # Remove firewall rules
+    cleanup_helm
+    cleanup_k3s
+    cleanup_containers
     cleanup_firewall
+    cleanup_user_files
     
-    # Remove configuration files
-    cleanup_config_files
-    
-    # Remove system configurations
-    cleanup_system_config
-    
+    print_success "Full cleanup completed!"
     echo
-    print_success "Cleanup completed successfully!"
-    echo
-    echo "The following have been removed:"
-    echo "  ✓ K3S cluster and all data"
-    echo "  ✓ ArgoCD and applications"
-    echo "  ✓ Helm"
-    echo "  ✓ K9s"
-    echo "  ✓ Configuration files"
-    echo "  ✓ Firewall rules"
-    echo
-    echo "You may need to reboot the system to ensure all changes take effect."
+    echo "To reinstall, run: ./k3s-setup.sh"
 }
 
-# Run main function
-main "$@" 
+# Function to perform partial cleanup
+partial_cleanup() {
+    print_status "Partial cleanup options:"
+    echo "1. Cleanup ArgoCD only"
+    echo "2. Cleanup K3S only"
+    echo "3. Cleanup Helm only"
+    echo "4. Cleanup K9s only"
+    echo "5. Cleanup user files only"
+    echo "6. Cleanup firewall rules only"
+    echo "7. Cleanup containers only"
+    echo "8. Back to main menu"
+    
+    echo -n "Select option (1-8): "
+    read -r choice
+    
+    case $choice in
+        1) cleanup_argocd ;;
+        2) cleanup_k3s ;;
+        3) cleanup_helm ;;
+        4) cleanup_k9s ;;
+        5) cleanup_user_files ;;
+        6) cleanup_firewall ;;
+        7) cleanup_containers ;;
+        8) return ;;
+        *) print_error "Invalid option" ;;
+    esac
+}
+
+# Main menu
+main_menu() {
+    while true; do
+        echo
+        echo "=========================================="
+        echo "           K3S Cleanup Script"
+        echo "=========================================="
+        echo
+        show_status
+        echo "Options:"
+        echo "1. Show installation status"
+        echo "2. Resume installation"
+        echo "3. Partial cleanup"
+        echo "4. Full cleanup (removes everything)"
+        echo "5. Exit"
+        echo
+        
+        echo -n "Select option (1-5): "
+        read -r choice
+        
+        case $choice in
+            1) show_status ;;
+            2) resume_installation ;;
+            3) partial_cleanup ;;
+            4) full_cleanup ;;
+            5) print_status "Exiting..."; exit 0 ;;
+            *) print_error "Invalid option" ;;
+        esac
+        
+        echo
+        echo "Press Enter to continue..."
+        read -r
+    done
+}
+
+# Command line options
+case "${1:-}" in
+    --status)
+        show_status
+        ;;
+    --resume)
+        resume_installation
+        ;;
+    --cleanup-argocd)
+        cleanup_argocd
+        ;;
+    --cleanup-k3s)
+        cleanup_k3s
+        ;;
+    --cleanup-helm)
+        cleanup_helm
+        ;;
+    --cleanup-k9s)
+        cleanup_k9s
+        ;;
+    --cleanup-all)
+        full_cleanup
+        ;;
+    --help|-h)
+        echo "Usage: $0 [OPTION]"
+        echo
+        echo "Options:"
+        echo "  --status              Show installation status"
+        echo "  --resume              Resume installation from current state"
+        echo "  --cleanup-argocd      Remove ArgoCD only"
+        echo "  --cleanup-k3s         Remove K3S only"
+        echo "  --cleanup-helm        Remove Helm only"
+        echo "  --cleanup-k9s         Remove K9s only"
+        echo "  --cleanup-all         Remove all components (full cleanup)"
+        echo "  --help, -h            Show this help message"
+        echo
+        echo "If no option is provided, interactive menu will be shown."
+        ;;
+    "")
+        main_menu
+        ;;
+    *)
+        print_error "Unknown option: $1"
+        echo "Use --help for usage information"
+        exit 1
+        ;;
+esac 

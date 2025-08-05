@@ -26,6 +26,16 @@ A companion script that helps diagnose and configure network settings.
 - nip.io resolution testing
 - Troubleshooting tips
 
+### 3. `k3s-cleanup.sh` - Cleanup and Resume Script
+A comprehensive cleanup script with resume functionality.
+
+**Features:**
+- Component status checking
+- Partial cleanup (individual components)
+- Full cleanup (removes everything)
+- Resume installation from current state
+- Interactive menu and command-line options
+
 ## Usage
 
 ### Prerequisites
@@ -37,9 +47,10 @@ A companion script that helps diagnose and configure network settings.
 
 1. **Download the scripts:**
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/main/scripts/k3s-setup.sh -o k3s-setup.sh
-   curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/main/scripts/network-setup.sh -o network-setup.sh
-   chmod +x k3s-setup.sh network-setup.sh
+   curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/Script/scripts/k3s-setup.sh -o k3s-setup.sh
+   curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/Script/scripts/network-setup.sh -o network-setup.sh
+   curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/Script/scripts/k3s-cleanup.sh -o k3s-cleanup.sh
+   chmod +x k3s-setup.sh network-setup.sh k3s-cleanup.sh
    ```
 
 2. **Optional: Run network setup first (recommended for troubleshooting):**
@@ -51,6 +62,8 @@ A companion script that helps diagnose and configure network settings.
    ```bash
    ./k3s-setup.sh
    ```
+   
+   **Note:** The script will automatically detect existing installations and offer resume options.
 
 ### Network Scenarios
 
@@ -102,12 +115,44 @@ After successful installation:
 - **Private Network**: `http://<local-ip>:30080`
 
 ### Kubeconfig
-- Location: `/home/<user>/kubeconfig.yaml`
-- Usage: `export KUBECONFIG=/home/<user>/kubeconfig.yaml`
+- Location: `~<user>/kubeconfig.yaml` (user's home directory)
+- Usage: `export KUBECONFIG=~<user>/kubeconfig.yaml`
 
 ### Domain Access
 - **Public Network**: Uses configured domain
 - **Private Network**: Uses nip.io domain (e.g., `myapp.192.168.1.100.nip.io`)
+
+## Cleanup and Resume
+
+### Automatic Resume
+The main setup script automatically detects existing installations and offers options:
+- **Continue**: Skip already installed components
+- **Clean and restart**: Remove everything and start fresh
+- **Exit**: Cancel the operation
+
+### Manual Cleanup
+Use the cleanup script for manual operations:
+
+```bash
+# Interactive menu
+./k3s-cleanup.sh
+
+# Command-line options
+./k3s-cleanup.sh --status              # Show installation status
+./k3s-cleanup.sh --resume              # Resume installation
+./k3s-cleanup.sh --cleanup-argocd      # Remove ArgoCD only
+./k3s-cleanup.sh --cleanup-k3s         # Remove K3S only
+./k3s-cleanup.sh --cleanup-helm        # Remove Helm only
+./k3s-cleanup.sh --cleanup-k9s         # Remove K9s only
+./k3s-cleanup.sh --cleanup-all         # Remove all components
+```
+
+### Resume from Failure
+If the installation fails partway through:
+
+1. **Check status**: `./k3s-cleanup.sh --status`
+2. **Resume**: `./k3s-cleanup.sh --resume` or run `./k3s-setup.sh` again
+3. **Clean and restart**: `./k3s-cleanup.sh --cleanup-all` then `./k3s-setup.sh`
 
 ## Troubleshooting
 
