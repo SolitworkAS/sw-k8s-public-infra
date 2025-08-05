@@ -192,6 +192,10 @@ cleanup_firewall() {
         sudo ufw delete allow 2380/tcp || true
         sudo ufw delete allow 30080/tcp || true
         
+        # Remove specific HTTP rule
+        print_status "Removing HTTP firewall rule..."
+        sudo ufw delete allow from any to any port 80 proto tcp || true
+        
         print_success "Firewall cleanup completed"
     else
         print_warning "UFW not found, skipping firewall cleanup"

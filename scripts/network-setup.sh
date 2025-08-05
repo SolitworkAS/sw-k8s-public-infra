@@ -103,6 +103,9 @@ configure_firewall() {
         sudo ufw allow 80/tcp
         sudo ufw allow 443/tcp
         
+        # Add specific HTTP rule with priority 1002
+        sudo ufw insert 2 allow from any to any port 80 proto tcp comment "HTTP access"
+        
         # Enable UFW if not already enabled
         if ! sudo ufw status | grep -q "Status: active"; then
             print_warning "Enabling UFW firewall..."
