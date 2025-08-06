@@ -97,10 +97,13 @@ prompt_input() {
     local default_value="$4"
     
     while true; do
+        echo
         if [ -n "$default_value" ]; then
-            input=$(gum input --prompt "$prompt" --placeholder "$default_value")
+            echo "$prompt (default: $default_value)"
+            input=$(gum input --prompt "> " --placeholder "Press Enter for default or type your value")
         else
-            input=$(gum input --prompt "$prompt")
+            echo "$prompt"
+            input=$(gum input --prompt "> ")
         fi
         
         # Use default value if input is empty
@@ -132,14 +135,18 @@ prompt_boolean() {
     local prompt="$1"
     local default_value="$2"
     
+    echo
     if [ -n "$default_value" ]; then
         if [ "$default_value" = "true" ]; then
-            gum confirm "$prompt" --default=true --affirmative="Yes" --negative="No" && echo "true" || echo "false"
+            echo "$prompt (default: Yes)"
+            gum confirm "> " --default=true --affirmative="Yes" --negative="No" && echo "true" || echo "false"
         else
-            gum confirm "$prompt" --default=false --affirmative="Yes" --negative="No" && echo "true" || echo "false"
+            echo "$prompt (default: No)"
+            gum confirm "> " --default=false --affirmative="Yes" --negative="No" && echo "true" || echo "false"
         fi
     else
-        gum confirm "$prompt" --affirmative="Yes" --negative="No" && echo "true" || echo "false"
+        echo "$prompt"
+        gum confirm "> " --affirmative="Yes" --negative="No" && echo "true" || echo "false"
     fi
 }
 
