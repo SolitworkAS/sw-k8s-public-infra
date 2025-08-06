@@ -28,7 +28,7 @@ print_status() {
 }
 
 print_success() {
-    gum log --level info "$1"
+    gum log --level success "$1"
 }
 
 print_warning() {
@@ -98,15 +98,9 @@ prompt_input() {
     
     while true; do
         if [ -n "$default_value" ]; then
-            echo -n "$prompt [$default_value]: "
+            input=$(gum input --prompt "$prompt" --placeholder "$default_value" --value "$default_value")
         else
-            echo -n "$prompt: "
-        fi
-        read -r input
-        
-        # Use default value if input is empty
-        if [ -z "$input" ] && [ -n "$default_value" ]; then
-            input="$default_value"
+            input=$(gum input --prompt "$prompt")
         fi
         
         if [ -z "$input" ]; then
@@ -133,29 +127,15 @@ prompt_boolean() {
     local prompt="$1"
     local default_value="$2"
     
-    while true; do
-        if [ -n "$default_value" ]; then
-            if [ "$default_value" = "true" ]; then
-                echo -n "$prompt (y/n) [y]: "
-            else
-                echo -n "$prompt (y/n) [n]: "
-            fi
+    if [ -n "$default_value" ]; then
+        if [ "$default_value" = "true" ]; then
+            gum confirm "$prompt" --default=true && echo "true" || echo "false"
         else
-            echo -n "$prompt (y/n): "
+            gum confirm "$prompt" --default=false && echo "true" || echo "false"
         fi
-        read -r input
-        
-        # Use default value if input is empty
-        if [ -z "$input" ] && [ -n "$default_value" ]; then
-            input="$default_value"
-        fi
-        
-        case $input in
-            [Yy]* ) echo "true"; return 0;;
-            [Nn]* ) echo "false"; return 0;;
-            * ) print_error "Please answer yes or no. Try again.";;
-        esac
-    done
+    else
+        gum confirm "$prompt" && echo "true" || echo "false"
+    fi
 }
 
 generate_random_string() {
