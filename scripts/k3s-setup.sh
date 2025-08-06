@@ -532,7 +532,7 @@ install_helm() {
 install_argocd() {
     print_status "Installing ArgoCD..."
     
-    if ! kubectl get nodes &>/dev/null; then
+    if ! sudo kubectl get nodes &>/dev/null; then
         print_error "K3S is not responding. Checking status..."
         sudo systemctl status k3s
         exit 1
