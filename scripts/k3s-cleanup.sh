@@ -345,11 +345,19 @@ main_menu() {
         
         show_status
         
-        choice=$(echo -e "Show installation status\nResume installation\nPartial cleanup\nFull cleanup (removes everything)\nExit" | gum choose --header "Select option:")
+        choice=$(echo -e "Show installation status\nResume installation\nUpdate ArgoCD application\nPartial cleanup\nFull cleanup (removes everything)\nExit" | gum choose --header "Select option:")
         
         case $choice in
             "Show installation status") show_status ;;
             "Resume installation") resume_installation ;;
+            "Update ArgoCD application") 
+                print_status "Redirecting to k3s-setup.sh for update..."
+                if [ -f "./k3s-setup.sh" ]; then
+                    ./k3s-setup.sh --update
+                else
+                    print_error "k3s-setup.sh not found in current directory"
+                fi
+                ;;
             "Partial cleanup") partial_cleanup ;;
             "Full cleanup (removes everything)") full_cleanup ;;
             "Exit") print_status "Exiting..."; exit 0 ;;

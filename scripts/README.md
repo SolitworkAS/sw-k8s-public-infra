@@ -36,6 +36,19 @@ chmod +x k3s-setup.sh network-setup.sh k3s-cleanup.sh
 ./k3s-setup.sh
 ```
 
+## Updating ArgoCD Application
+
+After initial installation, you can update the ArgoCD application with the latest configuration:
+
+```bash
+# Interactive update (selects configuration automatically)
+./k3s-setup.sh --update
+
+# Or use the cleanup script menu
+./k3s-cleanup.sh
+# Then select "Update ArgoCD application"
+```
+
 ## Configuration
 
 The script prompts for:
@@ -71,6 +84,14 @@ After installation:
 ./k3s-cleanup.sh --status              # Show status
 ./k3s-cleanup.sh --resume              # Resume installation
 ./k3s-cleanup.sh --cleanup-all         # Remove everything
+```
+
+## Command Line Options
+
+### k3s-setup.sh
+```bash
+./k3s-setup.sh --update                # Update ArgoCD application only
+./k3s-setup.sh --help                  # Show help
 ```
 
 ## Troubleshooting

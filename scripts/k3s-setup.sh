@@ -738,6 +738,124 @@ EOF
     print_success "ArgoCD application deployed"
 }
 
+# Function to update ArgoCD application
+update_argocd_application() {
+    print_status "Updating ArgoCD application..."
+    
+    # Check if application exists
+    if ! kubectl get application initial-$CUSTOMER-app -n argocd &>/dev/null; then
+        print_error "ArgoCD application 'initial-$CUSTOMER-app' not found"
+        print_status "Deploying new application instead..."
+        deploy_argocd_application
+        return
+    fi
+    
+    # REAPPLY THE ENTIRE MANIFEST FROM THE SCRIPT
+    print_status "Reapplying ArgoCD application manifest..."
+    kubectl apply -f - <<EOF
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: initial-$CUSTOMER-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: "https://github.com/SolitworkAS/sw-k8s-public-infra"
+    targetRevision: "Script"
+    path: "sw-public-chart"
+    helm:
+      values: |
+        global:
+          selfhosted: "$CUSTOMER"
+          hosted: "$([ "$SELF_HOSTED" = "true" ] && echo "$CUSTOMER" || echo "")"
+          domain: "$DOMAIN"
+          publicIp: "$DETECTED_IP"
+          container:
+            registry: "$CONTAINER_REGISTRY"
+            username: "$CONTAINER_REGISTRY_USERNAME"
+            password: "$CONTAINER_REGISTRY_PASSWORD"
+            imagePullSecret: "registry-secret"
+          deployDaChart: "$DEPLOY_DA_APP"
+          deployFinancialChart: "$DEPLOY_FC_APP"
+          intuit:
+            clientId: "$INTUIT_CLIENT_ID"
+            clientSecret: "$INTUIT_CLIENT_SECRET"
+            redirectUri: "$INTUIT_REDIRECT_URI"
+            encryptionKey: "$ENCRYPTION_KEY"
+        sw-private-chart:
+          environment-chart:
+            dex:
+              connectors:
+                github:
+                  clientID: "$GITHUB_CLIENT_ID"
+                  clientSecret: "$GITHUB_CLIENT_SECRET"
+                solitwork:
+                  clientID: "$SSO_CLIENT_ID"
+                  clientSecret: "$SSO_CLIENT_SECRET"
+                  issuer: "$SSO_ISSUER"
+                microsoft:
+                  clientID: "$MICROSOFT_CLIENT_ID"
+                  clientSecret: "$MICROSOFT_CLIENT_SECRET"
+            namespace: "environment"
+            domain: "$DOMAIN"
+            minio:
+              bucket:
+                name: "argo-workflows"
+            argo-workflows:
+              namespaceOverride: "argo"
+              server:
+                service:
+                  type: NodePort
+              postgres:
+                username: "$ARGOWORKFLOWS_USERNAME"
+                password: "$ARGOWORKFLOWS_PASSWORD"
+          customer-chart:
+            namespace: "$CUSTOMER"
+            appAdmin:
+              email: "$APP_ADMIN_EMAIL"
+              firstName: "$APP_ADMIN_FIRST_NAME"
+              lastName: "$APP_ADMIN_LAST_NAME"
+            postgres:
+              database: "$POSTGRES_DATABASE"
+              username: "$POSTGRES_USERNAME"
+              password: "$POSTGRES_PASSWORD"
+              biDevRole: "$BI_DEV_ROLE"
+              fcUser: "$FC_USER"
+              fcPassword: "$FC_PASSWORD"
+              fcDatabase: "$FC_DATABASE"
+            minio:
+              rootUser: "$MINIO_ROOT_USER"
+              rootPassword: "$MINIO_ROOT_PASSWORD"
+            fc:
+              enabled: "$DEPLOY_FC_APP"
+            da:
+              enabled: "$DEPLOY_DA_APP"
+          da-chart:
+            namespace: "da"
+            da:
+              da_frontend_image: "images/da-service/da-frontend"
+              da_service_image: "images/da-service/da-service"
+          financial-chart:
+            namespace: "fc"
+            fc:
+              fc_frontend_image: "images/financial-close-service/financial-close-frontend"
+              fc_service_image: "images/financial-close-service/financial-close-backend"
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: "$CUSTOMER"
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+    - ServerSideApply=true
+EOF
+    
+    print_success "ArgoCD application manifest reapplied"
+    print_status "Check ArgoCD UI for sync status: http://$DETECTED_IP:30080"
+}
+
 display_final_info() {
     print_success "K3S setup completed successfully!"
     echo
@@ -806,11 +924,43 @@ main() {
     if [ "$K3S_INSTALLED" = "true" ] || [ "$HELM_INSTALLED" = "true" ] || [ "$ARGOCD_INSTALLED" = "true" ] || [ "$K9S_INSTALLED" = "true" ]; then
         print_warning "Some components are already installed!"
         
-        choice=$(echo -e "Continue with installation (skip existing components)\nClean up and start fresh\nExit" | gum choose --header "Select option:")
+        choice=$(echo -e "Continue with installation (skip existing components)\nUpdate ArgoCD application only\nClean up and start fresh\nExit" | gum choose --header "Select option:")
         
         case $choice in
             "Continue with installation (skip existing components)")
                 print_status "Continuing with installation, skipping existing components..."
+                ;;
+            "Update ArgoCD application only")
+                print_status "Updating ArgoCD application only..."
+                # Load existing configuration if available
+                existing_configs=($(ls k3s-config-*.env 2>/dev/null || true))
+                if [ ${#existing_configs[@]} -gt 0 ]; then
+                    print_status "Found existing configuration files:"
+                    options=()
+                    for config in "${existing_configs[@]}"; do
+                        options+=("$config")
+                    done
+                    
+                    config_choice=$(printf '%s\n' "${options[@]}" | gum choose --header "Select configuration to use:")
+                    
+                    if [ -n "$config_choice" ]; then
+                        CONFIG_FILE="$config_choice"
+                        print_status "Loading configuration from $config_choice..."
+                        source "$config_choice"
+                        print_success "Configuration loaded successfully"
+                        
+                        export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+                        update_argocd_application
+                        print_success "Update completed!"
+                        exit 0
+                    else
+                        print_error "No configuration selected"
+                        exit 1
+                    fi
+                else
+                    print_error "No existing configuration found. Please run full installation first."
+                    exit 1
+                fi
                 ;;
             "Clean up and start fresh")
                 print_status "Cleaning up existing installation..."
@@ -865,4 +1015,59 @@ main() {
     display_final_info
 }
 
-main "$@" 
+# Command line options
+case "${1:-}" in
+    --update)
+        print_status "Update mode: Updating ArgoCD application only..."
+        
+        # Load existing configuration
+        existing_configs=($(ls k3s-config-*.env 2>/dev/null || true))
+        if [ ${#existing_configs[@]} -eq 0 ]; then
+            print_error "No configuration files found. Please run full installation first."
+            exit 1
+        fi
+        
+        if [ ${#existing_configs[@]} -eq 1 ]; then
+            CONFIG_FILE="${existing_configs[0]}"
+        else
+            print_status "Multiple configuration files found:"
+            for i in "${!existing_configs[@]}"; do
+                echo "$((i+1)). ${existing_configs[$i]}"
+            done
+            
+            read -p "Select configuration (1-${#existing_configs[@]}): " choice
+            if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le ${#existing_configs[@]} ]; then
+                CONFIG_FILE="${existing_configs[$((choice-1))]}"
+            else
+                print_error "Invalid selection"
+                exit 1
+            fi
+        fi
+        
+        print_status "Loading configuration from $CONFIG_FILE..."
+        source "$CONFIG_FILE"
+        print_success "Configuration loaded successfully"
+        
+        export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+        update_argocd_application
+        print_success "Update completed!"
+        exit 0
+        ;;
+    --help|-h)
+        echo "Usage: $0 [OPTION]"
+        echo
+        echo "Options:"
+        echo "  --update              Update ArgoCD application only (requires existing config)"
+        echo "  --help, -h            Show this help message"
+        echo
+        echo "If no option is provided, interactive installation will be performed."
+        ;;
+    "")
+        main "$@"
+        ;;
+    *)
+        print_error "Unknown option: $1"
+        echo "Use --help for usage information"
+        exit 1
+        ;;
+esac 
