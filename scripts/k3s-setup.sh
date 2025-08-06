@@ -98,7 +98,7 @@ prompt_input() {
     
     while true; do
         if [ -n "$default_value" ]; then
-            input=$(gum input --prompt "$prompt" --placeholder "$default_value" --value "$default_value")
+            input=$(gum input --prompt "$prompt" --placeholder "$default_value")
         else
             input=$(gum input --prompt "$prompt")
         fi
@@ -305,53 +305,53 @@ collect_user_input() {
         fi
     fi
     
-    CUSTOMER=$(prompt_input "Enter customer shorthand (lowercase letters and numbers only)" "^[a-z0-9]+$" "Customer must only contain lowercase letters and numbers")
+    CUSTOMER=$(prompt_input "Customer:" "^[a-z0-9]+$" "Customer must only contain lowercase letters and numbers")
     CONFIG_FILE="k3s-config-$CUSTOMER.env"
     
     if [ "$IS_PRIVATE_NETWORK" = "true" ]; then
         print_warning "Private network detected. Using nip.io for local development."
-        DOMAIN=$(prompt_input "Enter domain for nip.io (e.g., myapp)" "" "" "myapp")
+        DOMAIN=$(prompt_input "Domain for nip.io:" "" "" "myapp")
         DOMAIN="${DOMAIN}.${DETECTED_IP}.nip.io"
         print_status "Using nip.io domain: $DOMAIN"
     else
-        DOMAIN=$(prompt_input "Enter domain (e.g., afcsoftware.com)" "" "" "afcsoftware.com")
+        DOMAIN=$(prompt_input "Domain:" "" "" "afcsoftware.com")
     fi
     
     SELF_HOSTED=$(prompt_boolean "Is this self-hosted?" "true")
     
-    CONTAINER_REGISTRY=$(prompt_input "Enter container registry URL" "" "" "imagesdevregistry.azurecr.io")
-    CONTAINER_REGISTRY_USERNAME=$(prompt_input "Enter container registry username" "^.+$" "Username cannot be empty")
-    CONTAINER_REGISTRY_PASSWORD=$(prompt_input "Enter container registry password" "^.+$" "Password cannot be empty")
+    CONTAINER_REGISTRY=$(prompt_input "Container registry URL:" "" "" "imagesdevregistry.azurecr.io")
+    CONTAINER_REGISTRY_USERNAME=$(prompt_input "Container registry username:" "^.+$" "Username cannot be empty")
+    CONTAINER_REGISTRY_PASSWORD=$(prompt_input "Container registry password:" "^.+$" "Password cannot be empty")
     
-    APP_ADMIN_EMAIL=$(prompt_input "Enter application admin email" "^[^@]+@[^@]+\.[^@]+$" "Must be a valid email address")
-    APP_ADMIN_FIRST_NAME=$(prompt_input "Enter application admin first name" "" "First name cannot be empty")
-    APP_ADMIN_LAST_NAME=$(prompt_input "Enter application admin last name" "" "Last name cannot be empty")
+    APP_ADMIN_EMAIL=$(prompt_input "Application admin email:" "^[^@]+@[^@]+\.[^@]+$" "Must be a valid email address")
+    APP_ADMIN_FIRST_NAME=$(prompt_input "Application admin first name:" "" "First name cannot be empty")
+    APP_ADMIN_LAST_NAME=$(prompt_input "Application admin last name:" "" "Last name cannot be empty")
     
-    K3S_TOKEN=$(prompt_input "Enter K3S token (or 'null' for auto-generation)" "" "" "null")
+    K3S_TOKEN=$(prompt_input "K3S token (or 'null' for auto-generation):" "" "" "null")
     if [ "$K3S_TOKEN" = "null" ]; then
         K3S_TOKEN=$(generate_random_string 32)
         print_status "Generated K3S token: $K3S_TOKEN"
     fi
     
-    DEPLOYMENT_REVISION=$(prompt_input "Enter deployment revision" "" "" "HEAD")
+    DEPLOYMENT_REVISION=$(prompt_input "Deployment revision:" "" "" "HEAD")
     DEPLOY_DA_APP=$(prompt_boolean "Deploy DA app?" "false")
     DEPLOY_FC_APP=$(prompt_boolean "Deploy FC app?" "false")
     
-    GITHUB_CLIENT_ID=$(prompt_input "Enter GitHub client ID (or 'null')" "" "" "null")
-    GITHUB_CLIENT_SECRET=$(prompt_input "Enter GitHub client secret (or 'null')" "" "" "null")
+    GITHUB_CLIENT_ID=$(prompt_input "GitHub client ID (or 'null'):" "" "" "null")
+    GITHUB_CLIENT_SECRET=$(prompt_input "GitHub client secret (or 'null'):" "" "" "null")
     
-    SSO_ISSUER=$(prompt_input "Enter SSO issuer (or 'null')" "" "" "null")
-    SSO_CLIENT_ID=$(prompt_input "Enter SSO client ID (or 'null')" "" "" "null")
-    SSO_CLIENT_SECRET=$(prompt_input "Enter SSO client secret (or 'null')" "" "" "null")
+    SSO_ISSUER=$(prompt_input "SSO issuer (or 'null'):" "" "" "null")
+    SSO_CLIENT_ID=$(prompt_input "SSO client ID (or 'null'):" "" "" "null")
+    SSO_CLIENT_SECRET=$(prompt_input "SSO client secret (or 'null'):" "" "" "null")
     
-    MICROSOFT_CLIENT_ID=$(prompt_input "Enter Microsoft client ID (or 'null')" "" "" "null")
-    MICROSOFT_CLIENT_SECRET=$(prompt_input "Enter Microsoft client secret (or 'null')" "" "" "null")
+    MICROSOFT_CLIENT_ID=$(prompt_input "Microsoft client ID (or 'null'):" "" "" "null")
+    MICROSOFT_CLIENT_SECRET=$(prompt_input "Microsoft client secret (or 'null'):" "" "" "null")
     
-    INTUIT_CLIENT_ID=$(prompt_input "Enter Intuit client ID (or 'null')" "" "" "null")
-    INTUIT_CLIENT_SECRET=$(prompt_input "Enter Intuit client secret (or 'null')" "" "" "null")
-    INTUIT_REDIRECT_URI=$(prompt_input "Enter Intuit redirect URI (or 'null')" "" "" "null")
+    INTUIT_CLIENT_ID=$(prompt_input "Intuit client ID (or 'null'):" "" "" "null")
+    INTUIT_CLIENT_SECRET=$(prompt_input "Intuit client secret (or 'null'):" "" "" "null")
+    INTUIT_REDIRECT_URI=$(prompt_input "Intuit redirect URI (or 'null'):" "" "" "null")
     
-    ENCRYPTION_KEY=$(prompt_input "Enter encryption key (or 'null')" "" "" "null")
+    ENCRYPTION_KEY=$(prompt_input "Encryption key (or 'null'):" "" "" "null")
     
     print_status "Generating random credentials..."
     POSTGRES_DATABASE="u$(generate_random_string 8)"
