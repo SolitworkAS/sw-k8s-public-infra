@@ -36,7 +36,6 @@ detect_interfaces() {
     ip addr show | grep -E "^[0-9]+:" | awk '{print $2}' | sed 's/://'
     echo
     
-    # Get default route interface
     local default_interface=$(ip route | grep default | awk '{print $5}' | head -1)
     if [ -n "$default_interface" ]; then
         echo "Default interface: $default_interface"
@@ -153,7 +152,6 @@ show_network_info() {
     print_status "Network Information Summary"
     echo "=================================="
     
-    # Get IP addresses
     local public_ip=$(curl -s --max-time 10 ifconfig.me 2>/dev/null || echo "Unknown")
     local local_ip=$(hostname -I | awk '{print $1}')
     
@@ -162,7 +160,6 @@ show_network_info() {
     echo "Hostname: $(hostname)"
     echo "Domain: $(hostname -d 2>/dev/null || echo "None")"
     
-    # Check if it's a private network
     if [[ "$public_ip" =~ ^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.) ]]; then
         echo "Network Type: Private"
         test_nip_io "$public_ip"
@@ -204,31 +201,17 @@ main() {
     echo "=========================================="
     echo
     
-    # Check if running as root
     if [ "$EUID" -eq 0 ]; then
         print_error "This script should not be run as root"
         exit 1
     fi
     
-    # Show network information
     show_network_info
-    
-    # Detect interfaces
     detect_interfaces
-    
-    # Check ports
     check_ports
-    
-    # Test connectivity
     test_connectivity
-    
-    # Configure firewall
     configure_firewall
-    
-    # Setup port forwarding info
     setup_port_forwarding
-    
-    # Show troubleshooting tips
     troubleshooting_tips
     
     print_success "Network setup check completed!"

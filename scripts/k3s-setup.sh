@@ -2,26 +2,41 @@
 
 set -e
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Check if gum is installed, install if not
+check_gum() {
+    if ! command -v gum &> /dev/null; then
+        echo "Installing gum for better UI..."
+        if command -v apt-get &> /dev/null; then
+            sudo mkdir -p /etc/apt/keyrings
+            curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
+            echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
+            sudo apt update -qq && sudo apt install -y gum
+        elif command -v brew &> /dev/null; then
+            brew install charmbracelet/tap/gum
+        else
+            echo "Please install gum manually: https://github.com/charmbracelet/gum#installation"
+            exit 1
+        fi
+    fi
+}
+
+# Initialize gum
+check_gum
 
 print_status() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+    gum log --level info "$1"
 }
 
 print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+    gum log --level success "$1"
 }
 
 print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
+    gum log --level warn "$1"
 }
 
 print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    gum log --level error "$1"
 }
 
 detect_network_config() {
@@ -69,7 +84,7 @@ detect_network_config() {
     LOCAL_IP="$local_ip"
     IS_PRIVATE_NETWORK="$is_private"
     
-    print_success "Network configuration detected:"
+    print_success "Network configuration detected"
     echo "  Public/External IP: $DETECTED_IP"
     echo "  Local IP: $LOCAL_IP"
     echo "  Private Network: $IS_PRIVATE_NETWORK"
@@ -81,20 +96,15 @@ prompt_input() {
     local error_message="$3"
     local default_value="$4"
     
-    echo -n "$prompt" >&2
-    
     while true; do
         if [ -n "$default_value" ]; then
-            echo -n " [$default_value]: " >&2
-            read -r input
-            input=${input:-$default_value}
+            input=$(gum input --prompt "$prompt" --placeholder "$default_value" --value "$default_value")
         else
-            echo -n ": " >&2
-            read -r input
+            input=$(gum input --prompt "$prompt")
         fi
         
         if [ -z "$input" ]; then
-            print_error "Input cannot be empty"
+            print_error "Input cannot be empty. Try again."
             continue
         fi
         
@@ -103,7 +113,7 @@ prompt_input() {
                 echo "$input"
                 return 0
             else
-                print_error "$error_message"
+                print_error "Try again. Must comply with: $error_message"
                 continue
             fi
         else
@@ -117,22 +127,15 @@ prompt_boolean() {
     local prompt="$1"
     local default_value="$2"
     
-    while true; do
-        if [ -n "$default_value" ]; then
-            echo -n "$prompt (y/n) [$default_value]: " >&2
-            read -r input
-            input=${input:-$default_value}
+    if [ -n "$default_value" ]; then
+        if [ "$default_value" = "true" ]; then
+            gum confirm "$prompt" --default=true && echo "true" || echo "false"
         else
-            echo -n "$prompt (y/n): " >&2
-            read -r input
+            gum confirm "$prompt" --default=false && echo "true" || echo "false"
         fi
-        
-        case $input in
-            [Yy]* ) echo "true"; return 0;;
-            [Nn]* ) echo "false"; return 0;;
-            * ) print_error "Please answer yes or no";;
-        esac
-    done
+    else
+        gum confirm "$prompt" && echo "true" || echo "false"
+    fi
 }
 
 generate_random_string() {
@@ -234,19 +237,19 @@ check_prerequisites() {
     
     if ! command -v curl &> /dev/null; then
         print_status "Installing curl..."
-        sudo apt update
+        sudo apt update -qq
         sudo apt install -y curl
     fi
     
     if ! command -v wget &> /dev/null; then
         print_status "Installing wget..."
-        sudo apt update
+        sudo apt update -qq
         sudo apt install -y wget
     fi
     
     if ! command -v timeout &> /dev/null; then
         print_status "Installing coreutils..."
-        sudo apt update
+        sudo apt update -qq
         sudo apt install -y coreutils
     fi
     
@@ -283,19 +286,20 @@ collect_user_input() {
     existing_configs=($(ls k3s-config-*.env 2>/dev/null || true))
     if [ ${#existing_configs[@]} -gt 0 ]; then
         print_status "Found existing configuration files:"
-        for i in "${!existing_configs[@]}"; do
-            echo "  $((i+1)). ${existing_configs[$i]}"
-        done
-        echo "  $(( ${#existing_configs[@]} + 1 )). Create new configuration"
-        echo
-        echo -n "Select configuration (1-$(( ${#existing_configs[@]} + 1 ))): "
-        read -r config_choice
         
-        if [ "$config_choice" -ge 1 ] && [ "$config_choice" -le "${#existing_configs[@]}" ]; then
-            selected_config="${existing_configs[$((config_choice-1))]}"
-            CONFIG_FILE="$selected_config"
-            print_status "Loading configuration from $selected_config..."
-            source "$selected_config"
+        # Create options for gum choose
+        options=()
+        for config in "${existing_configs[@]}"; do
+            options+=("$config")
+        done
+        options+=("Create new configuration")
+        
+        config_choice=$(printf '%s\n' "${options[@]}" | gum choose --header "Select configuration:")
+        
+        if [ -n "$config_choice" ] && [ "$config_choice" != "Create new configuration" ]; then
+            CONFIG_FILE="$config_choice"
+            print_status "Loading configuration from $config_choice..."
+            source "$config_choice"
             print_success "Configuration loaded successfully"
             return 0
         fi
@@ -429,7 +433,7 @@ MINIO_ROOT_PASSWORD="$MINIO_ROOT_PASSWORD"
 EOF
     
     chmod 600 "$CONFIG_FILE"
-    print_success "Configuration saved to $CONFIG_FILE"
+    print_success "Configuration saved"
 }
 
 install_k3s() {
@@ -445,7 +449,7 @@ install_k3s() {
     sudo rm -f /etc/systemd/system/k3s.service 2>/dev/null || true
     sudo systemctl daemon-reload 2>/dev/null || true
     
-    sudo apt update
+    sudo apt update -qq
     sudo apt install -y ufw
     
     curl -sfL https://get.k3s.io | K3S_TOKEN=$K3S_TOKEN sh -s - server --cluster-init --write-kubeconfig-mode 644 --bind-address 0.0.0.0 --advertise-address $LOCAL_IP
@@ -461,8 +465,6 @@ install_k3s() {
         exit 1
     fi
     
-    print_status "K3S service is running, waiting for API to be ready..."
-    
     print_status "Waiting for K3S API to be ready..."
     timeout=300
     counter=0
@@ -472,9 +474,8 @@ install_k3s() {
         fi
         sleep 5
         counter=$((counter + 5))
-        echo -n "."
+        gum spin --spinner dot --title "Waiting for K3S API..." -- sleep 5
     done
-    echo
     
     if [ $counter -ge $timeout ]; then
         print_error "K3S API failed to become ready within $timeout seconds"
@@ -524,8 +525,6 @@ install_helm() {
     
     curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
     
-    helm version
-    
     print_success "Helm installed successfully"
 }
 
@@ -545,7 +544,6 @@ install_argocd() {
     helm repo add argo https://argoproj.github.io/argo-helm
     helm repo update
     
-    export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
     helm upgrade --install argocd argo/argo-cd \
         --namespace argocd \
         --set server.metrics.enabled=true \
@@ -566,7 +564,7 @@ install_k9s() {
     
     export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
     
-    wget https://github.com/derailed/k9s/releases/download/v0.32.5/k9s_linux_amd64.deb
+    wget -q https://github.com/derailed/k9s/releases/download/v0.32.5/k9s_linux_amd64.deb
     sudo apt install -y ./k9s_linux_amd64.deb
     rm k9s_linux_amd64.deb
     
@@ -733,7 +731,6 @@ spec:
     - ServerSideApply=true
 EOF
     
-    echo "Triggering ArgoCD refresh..."
     kubectl patch application initial-$CUSTOMER-app -n argocd \
         -p '{"metadata": {"annotations": {"argocd.argoproj.io/refresh": "hard"}}}' \
         --type merge || echo "Failed to patch ArgoCD app for refresh, continuing anyway"
@@ -782,9 +779,13 @@ display_final_info() {
 }
 
 main() {
-    echo "=========================================="
-    echo "           K3S Setup Script"
-    echo "=========================================="
+    gum style \
+        --border normal \
+        --margin "1" \
+        --padding "1" \
+        --border-foreground 212 \
+        "K3S Setup Script" \
+        "Lightweight Kubernetes with ArgoCD"
     echo
     
     check_root
@@ -804,20 +805,14 @@ main() {
     
     if [ "$K3S_INSTALLED" = "true" ] || [ "$HELM_INSTALLED" = "true" ] || [ "$ARGOCD_INSTALLED" = "true" ] || [ "$K9S_INSTALLED" = "true" ]; then
         print_warning "Some components are already installed!"
-        echo
-        echo "Options:"
-        echo "1. Continue with installation (skip existing components)"
-        echo "2. Clean up and start fresh"
-        echo "3. Exit"
-        echo
-        echo -n "Select option (1-3): "
-        read -r choice
+        
+        choice=$(echo -e "Continue with installation (skip existing components)\nClean up and start fresh\nExit" | gum choose --header "Select option:")
         
         case $choice in
-            1)
+            "Continue with installation (skip existing components)")
                 print_status "Continuing with installation, skipping existing components..."
                 ;;
-            2)
+            "Clean up and start fresh")
                 print_status "Cleaning up existing installation..."
                 if [ -f "./k3s-cleanup.sh" ]; then
                     ./k3s-cleanup.sh --cleanup-all
@@ -826,7 +821,7 @@ main() {
                     exit 1
                 fi
                 ;;
-            3)
+            "Exit")
                 print_status "Exiting..."
                 exit 0
                 ;;

@@ -5,27 +5,41 @@
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Check if gum is installed, install if not
+check_gum() {
+    if ! command -v gum &> /dev/null; then
+        echo "Installing gum for better UI..."
+        if command -v apt-get &> /dev/null; then
+            sudo mkdir -p /etc/apt/keyrings
+            curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
+            echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
+            sudo apt update -qq && sudo apt install -y gum
+        elif command -v brew &> /dev/null; then
+            brew install charmbracelet/tap/gum
+        else
+            echo "Please install gum manually: https://github.com/charmbracelet/gum#installation"
+            exit 1
+        fi
+    fi
+}
+
+# Initialize gum
+check_gum
 
 print_status() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+    gum log --level info "$1"
 }
 
 print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+    gum log --level success "$1"
 }
 
 print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
+    gum log --level warn "$1"
 }
 
 print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    gum log --level error "$1"
 }
 
 # Function to check if running as root
@@ -49,38 +63,22 @@ confirm_action() {
 
 # Function to check if K3S is installed
 check_k3s_installed() {
-    if command -v k3s &> /dev/null || [ -f /usr/local/bin/k3s ]; then
-        return 0
-    else
-        return 1
-    fi
+    command -v k3s &> /dev/null || [ -f /usr/local/bin/k3s ]
 }
 
 # Function to check if ArgoCD is installed
 check_argocd_installed() {
-    if kubectl get namespace argocd &>/dev/null 2>&1; then
-        return 0
-    else
-        return 1
-    fi
+    kubectl get namespace argocd &>/dev/null 2>&1
 }
 
 # Function to check if Helm is installed
 check_helm_installed() {
-    if command -v helm &> /dev/null; then
-        return 0
-    else
-        return 1
-    fi
+    command -v helm &> /dev/null
 }
 
 # Function to check if K9s is installed
 check_k9s_installed() {
-    if command -v k9s &> /dev/null; then
-        return 0
-    else
-        return 1
-    fi
+    command -v k9s &> /dev/null
 }
 
 # Function to cleanup ArgoCD
@@ -88,15 +86,12 @@ cleanup_argocd() {
     print_status "Cleaning up ArgoCD..."
     
     if check_argocd_installed; then
-        # Uninstall ArgoCD applications
         print_status "Removing ArgoCD applications..."
         kubectl delete applications --all -n argocd --ignore-not-found=true || true
         
-        # Uninstall ArgoCD
         print_status "Uninstalling ArgoCD..."
         helm uninstall argocd -n argocd --ignore-not-found=true || true
         
-        # Remove ArgoCD namespace
         print_status "Removing ArgoCD namespace..."
         kubectl delete namespace argocd --ignore-not-found=true || true
         
@@ -111,30 +106,23 @@ cleanup_k3s() {
     print_status "Cleaning up K3S..."
     
     if check_k3s_installed; then
-        # Stop K3S service
         print_status "Stopping K3S service..."
         sudo systemctl stop k3s || true
         
-        # Disable K3S service
         print_status "Disabling K3S service..."
         sudo systemctl disable k3s || true
         
-        # Remove K3S service file
         print_status "Removing K3S service file..."
         sudo rm -f /etc/systemd/system/k3s.service || true
         
-        # Reload systemd
         sudo systemctl daemon-reload || true
         
-        # Remove K3S binary
         print_status "Removing K3S binary..."
         sudo rm -f /usr/local/bin/k3s || true
         
-        # Remove K3S data directory
         print_status "Removing K3S data directory..."
         sudo rm -rf /var/lib/rancher/k3s || true
         
-        # Remove K3S configuration
         print_status "Removing K3S configuration..."
         sudo rm -rf /etc/rancher/k3s || true
         
@@ -149,11 +137,9 @@ cleanup_helm() {
     print_status "Cleaning up Helm..."
     
     if check_helm_installed; then
-        # Remove Helm binary
         print_status "Removing Helm..."
         sudo rm -f /usr/local/bin/helm || true
         
-        # Remove Helm cache
         print_status "Removing Helm cache..."
         rm -rf ~/.cache/helm || true
         rm -rf ~/.config/helm || true
@@ -169,7 +155,6 @@ cleanup_k9s() {
     print_status "Cleaning up K9s..."
     
     if check_k9s_installed; then
-        # Remove K9s package
         print_status "Removing K9s..."
         sudo apt remove -y k9s || true
         sudo apt autoremove -y || true
@@ -185,14 +170,12 @@ cleanup_firewall() {
     print_status "Cleaning up firewall rules..."
     
     if command -v ufw &> /dev/null; then
-        # Remove K3S-related firewall rules
         print_status "Removing K3S firewall rules..."
         sudo ufw delete allow 6443/tcp || true
         sudo ufw delete allow 2379/tcp || true
         sudo ufw delete allow 2380/tcp || true
         sudo ufw delete allow 30080/tcp || true
         
-        # Remove specific HTTP rule
         print_status "Removing HTTP firewall rule..."
         sudo ufw delete allow from any to any port 80 proto tcp || true
         
@@ -206,25 +189,21 @@ cleanup_firewall() {
 cleanup_user_files() {
     print_status "Cleaning up user files..."
     
-    # Remove kubeconfig
     USER_HOME=$(eval echo ~$USER)
     if [ -f "$USER_HOME/kubeconfig.yaml" ]; then
         print_status "Removing kubeconfig..."
         rm -f "$USER_HOME/kubeconfig.yaml"
     fi
     
-    # Remove shell profile entries
     print_status "Removing shell profile entries..."
     sed -i '/export KUBECONFIG=\/etc\/rancher\/k3s\/k3s.yaml/d' ~/.bashrc || true
     sed -i '/export KUBECONFIG=\/etc\/rancher\/k3s\/k3s.yaml/d' ~/.profile || true
     
-    # Remove downloaded files
     print_status "Removing downloaded files..."
     rm -f k9s_linux_amd64.deb || true
     rm -f k3s-setup.sh || true
     rm -f network-setup.sh || true
     
-    # Remove configuration files
     print_status "Removing configuration files..."
     rm -f k3s-config-*.env || true
     
@@ -235,14 +214,12 @@ cleanup_user_files() {
 cleanup_containers() {
     print_status "Cleaning up containers and images..."
     
-    # Stop and remove all containers
     if command -v ctr &> /dev/null; then
         print_status "Removing containerd containers..."
         sudo ctr containers list | awk 'NR>1 {print $1}' | xargs -r sudo ctr containers rm || true
         sudo ctr images list | awk 'NR>1 {print $1}' | xargs -r sudo ctr images rm || true
     fi
     
-    # Clean up Docker if present
     if command -v docker &> /dev/null; then
         print_status "Cleaning up Docker..."
         docker system prune -af || true
