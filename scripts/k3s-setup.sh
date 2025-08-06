@@ -532,7 +532,9 @@ install_helm() {
 install_argocd() {
     print_status "Installing ArgoCD..."
     
-    if ! sudo kubectl get nodes &>/dev/null; then
+    export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+    
+    if ! kubectl get nodes &>/dev/null; then
         print_error "K3S is not responding. Checking status..."
         sudo systemctl status k3s
         exit 1
