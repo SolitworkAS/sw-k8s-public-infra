@@ -23,18 +23,16 @@ Scripts for setting up K3S, ArgoCD, and related components on Ubuntu systems.
 ## Quick Start
 
 ```bash
-# Download scripts
+# One-liner installation (recommended)
+curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/Script/scripts/k3s-setup.sh | bash
+
+# Or download and run manually
 curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/Script/scripts/k3s-setup.sh -o k3s-setup.sh
-curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/Script/scripts/network-setup.sh -o network-setup.sh
-curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/Script/scripts/k3s-cleanup.sh -o k3s-cleanup.sh
-chmod +x k3s-setup.sh network-setup.sh k3s-cleanup.sh
-
-# Optional: Check network
-./network-setup.sh
-
-# Run setup
+chmod +x k3s-setup.sh
 ./k3s-setup.sh
 ```
+
+**Note**: The script automatically downloads and runs the network setup check before installation.
 
 ## Updating ArgoCD Application
 

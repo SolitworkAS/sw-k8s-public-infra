@@ -2,7 +2,24 @@
 
 set -e
 
-# Check if gum is installed, install if not
+# =============================================================================
+# K3S Setup Script - Lightweight Kubernetes with ArgoCD
+# 
+# This script installs and configures:
+# - K3S (lightweight Kubernetes)
+# - Helm (package manager)
+# - ArgoCD (GitOps continuous deployment)
+# - K9s (cluster management UI)
+# 
+# The script handles network detection, configuration management, and
+# provides update capabilities for ArgoCD applications.
+# =============================================================================
+
+# =============================================================================
+# UTILITY FUNCTIONS
+# =============================================================================
+
+# Install gum for better UI if not present
 check_gum() {
     if ! command -v gum &> /dev/null; then
         echo "Installing gum for better UI..."
@@ -20,53 +37,41 @@ check_gum() {
     fi
 }
 
-# Initialize gum
-check_gum
+# Print functions for consistent UI
+print_status() { gum log --level info "$1"; }
+print_success() { gum style --foreground 10 "✅ $1"; }
+print_warning() { gum log --level warn "$1"; }
+print_error() { gum log --level error "$1"; }
 
-print_status() {
-    gum log --level info "$1"
-}
+# Generate random strings and passwords
+generate_random_string() { cat /dev/urandom | tr -dc 'a-z0-9' | fold -w $1 | head -n 1; }
+generate_random_password() { cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w $1 | head -n 1; }
 
-print_success() {
-    gum style --foreground 10 "✅ $1"
-}
+# =============================================================================
+# NETWORK DETECTION
+# =============================================================================
 
-print_warning() {
-    gum log --level warn "$1"
-}
-
-print_error() {
-    gum log --level error "$1"
-}
-
+# Detect network configuration (public/private IP, local IP)
 detect_network_config() {
     print_status "Detecting network configuration..."
     
     local public_ip=""
     local local_ip=""
     
+    # Get local IP
     if command -v ip &> /dev/null; then
         local_ip=$(ip route get 1.1.1.1 | awk '{print $7; exit}' 2>/dev/null || echo "")
     fi
-    
     if [ -z "$local_ip" ]; then
         local_ip=$(hostname -I | awk '{print $1}' 2>/dev/null || echo "")
     fi
     
+    # Get public IP from multiple sources
     if command -v curl &> /dev/null; then
-        public_ip=$(timeout 10 curl -s ifconfig.me 2>/dev/null || echo "")
-    fi
-    
-    if [ -z "$public_ip" ] && command -v curl &> /dev/null; then
-        public_ip=$(timeout 10 curl -s ipinfo.io/ip 2>/dev/null || echo "")
-    fi
-    
-    if [ -z "$public_ip" ] && command -v curl &> /dev/null; then
-        public_ip=$(timeout 10 curl -s icanhazip.com 2>/dev/null || echo "")
-    fi
-    
-    if [ -z "$public_ip" ] && command -v curl &> /dev/null; then
-        public_ip=$(timeout 10 curl -s checkip.amazonaws.com 2>/dev/null || echo "")
+        for endpoint in ifconfig.me ipinfo.io/ip icanhazip.com checkip.amazonaws.com; do
+            public_ip=$(timeout 10 curl -s "$endpoint" 2>/dev/null || echo "")
+            [ -n "$public_ip" ] && break
+        done
     fi
     
     if [ -z "$public_ip" ]; then
@@ -74,6 +79,7 @@ detect_network_config() {
         public_ip="$local_ip"
     fi
     
+    # Check if private network
     local is_private=false
     if [[ "$public_ip" =~ ^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.) ]]; then
         is_private=true
@@ -90,6 +96,11 @@ detect_network_config() {
     echo "  Private Network: $IS_PRIVATE_NETWORK"
 }
 
+# =============================================================================
+# USER INPUT FUNCTIONS
+# =============================================================================
+
+# Prompt for input with validation and default values
 prompt_input() {
     local prompt="$1"
     local validation_regex="$2"
@@ -123,6 +134,7 @@ prompt_input() {
     done
 }
 
+# Prompt for boolean values
 prompt_boolean() {
     local prompt="$1"
     local default_value="$2"
@@ -138,16 +150,29 @@ prompt_boolean() {
     fi
 }
 
-generate_random_string() {
-    local length=$1
-    cat /dev/urandom | tr -dc 'a-z0-9' | fold -w $length | head -n 1
+# Prompt for optional values (null if empty)
+prompt_optional() {
+    local prompt="$1"
+    local default_value="$2"
+    
+    if [ -n "$default_value" ]; then
+        input=$(gum input --prompt "$prompt" --placeholder "$default_value (press Enter for null)")
+    else
+        input=$(gum input --prompt "$prompt (press Enter for null)")
+    fi
+    
+    if [ -z "$input" ]; then
+        echo "null"
+    else
+        echo "$input"
+    fi
 }
 
-generate_random_password() {
-    local length=$1
-    cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w $length | head -n 1
-}
+# =============================================================================
+# SYSTEM CHECKS
+# =============================================================================
 
+# Check if running as root (should not be)
 check_root() {
     if [ "$EUID" -eq 0 ]; then
         print_error "This script should not be run as root"
@@ -155,38 +180,13 @@ check_root() {
     fi
 }
 
-check_k3s_installed() {
-    if command -v k3s &> /dev/null || [ -f /usr/local/bin/k3s ]; then
-        return 0
-    else
-        return 1
-    fi
-}
+# Check if components are installed
+check_k3s_installed() { command -v k3s &> /dev/null || [ -f /usr/local/bin/k3s ]; }
+check_argocd_installed() { kubectl get namespace argocd &>/dev/null 2>&1; }
+check_helm_installed() { command -v helm &> /dev/null; }
+check_k9s_installed() { command -v k9s &> /dev/null; }
 
-check_argocd_installed() {
-    if kubectl get namespace argocd &>/dev/null 2>&1; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-check_helm_installed() {
-    if command -v helm &> /dev/null; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-check_k9s_installed() {
-    if command -v k9s &> /dev/null; then
-        return 0
-    else
-        return 1
-    fi
-}
-
+# Show installation status of all components
 show_installation_status() {
     print_status "Checking current installation status..."
     echo
@@ -227,6 +227,7 @@ show_installation_status() {
     echo
 }
 
+# Check system prerequisites
 check_prerequisites() {
     print_status "Checking prerequisites..."
     
@@ -235,24 +236,15 @@ check_prerequisites() {
         exit 1
     fi
     
-    if ! command -v curl &> /dev/null; then
-        print_status "Installing curl..."
-        sudo apt update -qq
-        sudo apt install -y curl
-    fi
+    # Install required packages
+    for pkg in curl wget coreutils; do
+        if ! command -v $pkg &> /dev/null; then
+            print_status "Installing $pkg..."
+            sudo apt update -qq && sudo apt install -y $pkg
+        fi
+    done
     
-    if ! command -v wget &> /dev/null; then
-        print_status "Installing wget..."
-        sudo apt update -qq
-        sudo apt install -y wget
-    fi
-    
-    if ! command -v timeout &> /dev/null; then
-        print_status "Installing coreutils..."
-        sudo apt update -qq
-        sudo apt install -y coreutils
-    fi
-    
+    # System warnings
     if swapon --show | grep -q .; then
         print_warning "Swap is enabled. K3S may have issues."
     fi
@@ -267,6 +259,7 @@ check_prerequisites() {
         print_warning "Less than 10GB free disk space. K3S may have issues."
     fi
     
+    # Port availability check
     local ports=(6443 30080 80 443 8080 2379 2380)
     for port in "${ports[@]}"; do
         if netstat -tuln 2>/dev/null | grep -q ":$port "; then
@@ -277,6 +270,11 @@ check_prerequisites() {
     print_success "Prerequisites check completed"
 }
 
+# =============================================================================
+# CONFIGURATION MANAGEMENT
+# =============================================================================
+
+# Collect user input for configuration
 collect_user_input() {
     print_status "Collecting configuration parameters..."
     
@@ -287,7 +285,6 @@ collect_user_input() {
     if [ ${#existing_configs[@]} -gt 0 ]; then
         print_status "Found existing configuration files:"
         
-        # Create options for gum choose
         options=()
         for config in "${existing_configs[@]}"; do
             options+=("$config")
@@ -305,9 +302,11 @@ collect_user_input() {
         fi
     fi
     
+    # Collect new configuration
     CUSTOMER=$(prompt_input "Customer:" "^[a-z0-9]+$" "Customer must only contain lowercase letters and numbers")
     CONFIG_FILE="k3s-config-$CUSTOMER.env"
     
+    # Domain configuration
     if [ "$IS_PRIVATE_NETWORK" = "true" ]; then
         print_warning "Private network detected. Using nip.io for local development."
         DOMAIN=$(prompt_input "Domain for nip.io:" "" "" "myapp")
@@ -319,14 +318,17 @@ collect_user_input() {
     
     SELF_HOSTED=$(prompt_boolean "Is this self-hosted?" "true")
     
+    # Container registry
     CONTAINER_REGISTRY=$(prompt_input "Container registry URL:" "" "" "imagesdevregistry.azurecr.io")
     CONTAINER_REGISTRY_USERNAME=$(prompt_input "Container registry username:" "^.+$" "Username cannot be empty")
     CONTAINER_REGISTRY_PASSWORD=$(prompt_input "Container registry password:" "^.+$" "Password cannot be empty")
     
+    # Application admin
     APP_ADMIN_EMAIL=$(prompt_input "Application admin email:" "^[^@]+@[^@]+\.[^@]+$" "Must be a valid email address")
     APP_ADMIN_FIRST_NAME=$(prompt_input "Application admin first name:" "" "First name cannot be empty")
     APP_ADMIN_LAST_NAME=$(prompt_input "Application admin last name:" "" "Last name cannot be empty")
     
+    # K3S configuration
     K3S_TOKEN=$(prompt_input "K3S token (or 'null' for auto-generation):" "" "" "null")
     if [ "$K3S_TOKEN" = "null" ]; then
         K3S_TOKEN=$(generate_random_string 32)
@@ -337,22 +339,32 @@ collect_user_input() {
     DEPLOY_DA_APP=$(prompt_boolean "Deploy DA app?" "false")
     DEPLOY_FC_APP=$(prompt_boolean "Deploy FC app?" "false")
     
-    GITHUB_CLIENT_ID=$(prompt_input "GitHub client ID (or 'null'):" "" "" "null")
-    GITHUB_CLIENT_SECRET=$(prompt_input "GitHub client secret (or 'null'):" "" "" "null")
+    # OAuth/SSO configuration
+    GITHUB_CLIENT_ID=$(prompt_optional "GitHub client ID")
+    GITHUB_CLIENT_SECRET=$(prompt_optional "GitHub client secret")
     
-    SSO_ISSUER=$(prompt_input "SSO issuer (or 'null'):" "" "" "null")
-    SSO_CLIENT_ID=$(prompt_input "SSO client ID (or 'null'):" "" "" "null")
-    SSO_CLIENT_SECRET=$(prompt_input "SSO client secret (or 'null'):" "" "" "null")
+    SSO_ISSUER=$(prompt_optional "SSO issuer")
+    SSO_CLIENT_ID=$(prompt_optional "SSO client ID")
+    SSO_CLIENT_SECRET=$(prompt_optional "SSO client secret")
     
-    MICROSOFT_CLIENT_ID=$(prompt_input "Microsoft client ID (or 'null'):" "" "" "null")
-    MICROSOFT_CLIENT_SECRET=$(prompt_input "Microsoft client secret (or 'null'):" "" "" "null")
+    MICROSOFT_CLIENT_ID=$(prompt_optional "Microsoft client ID")
+    MICROSOFT_CLIENT_SECRET=$(prompt_optional "Microsoft client secret")
     
-    INTUIT_CLIENT_ID=$(prompt_input "Intuit client ID (or 'null'):" "" "" "null")
-    INTUIT_CLIENT_SECRET=$(prompt_input "Intuit client secret (or 'null'):" "" "" "null")
-    INTUIT_REDIRECT_URI=$(prompt_input "Intuit redirect URI (or 'null'):" "" "" "null")
+    # Intuit configuration (only for non-self-hosted)
+    if [ "$SELF_HOSTED" = "true" ]; then
+        print_status "Self-hosted deployment detected. Skipping Intuit configuration."
+        INTUIT_CLIENT_ID="null"
+        INTUIT_CLIENT_SECRET="null"
+        INTUIT_REDIRECT_URI="null"
+        ENCRYPTION_KEY="null"
+    else
+        INTUIT_CLIENT_ID=$(prompt_optional "Intuit client ID")
+        INTUIT_CLIENT_SECRET=$(prompt_optional "Intuit client secret")
+        INTUIT_REDIRECT_URI=$(prompt_optional "Intuit redirect URI")
+        ENCRYPTION_KEY=$(prompt_optional "Encryption key")
+    fi
     
-    ENCRYPTION_KEY=$(prompt_input "Encryption key (or 'null'):" "" "" "null")
-    
+    # Generate random credentials
     print_status "Generating random credentials..."
     POSTGRES_DATABASE="u$(generate_random_string 8)"
     POSTGRES_USERNAME="u$(generate_random_string 8)"
@@ -367,11 +379,10 @@ collect_user_input() {
     MINIO_ROOT_PASSWORD=$(generate_random_password 16)
     
     print_success "Configuration parameters collected"
-    
-    # Save configuration to file
     save_configuration
 }
 
+# Save configuration to file
 save_configuration() {
     print_status "Saving configuration to $CONFIG_FILE..."
     
@@ -436,28 +447,30 @@ EOF
     print_success "Configuration saved"
 }
 
+# =============================================================================
+# COMPONENT INSTALLATION
+# =============================================================================
+
+# Install K3S server
 install_k3s() {
     print_status "Installing K3S..."
     
-    # Clean up any existing K3S installation
+    # Clean up any existing installation
     print_status "Cleaning up any existing K3S installation..."
     sudo systemctl stop k3s 2>/dev/null || true
     sudo systemctl disable k3s 2>/dev/null || true
-    sudo rm -rf /etc/rancher/k3s 2>/dev/null || true
-    sudo rm -rf /var/lib/rancher/k3s 2>/dev/null || true
-    sudo rm -f /usr/local/bin/k3s 2>/dev/null || true
-    sudo rm -f /etc/systemd/system/k3s.service 2>/dev/null || true
+    sudo rm -rf /etc/rancher/k3s /var/lib/rancher/k3s /usr/local/bin/k3s /etc/systemd/system/k3s.service 2>/dev/null || true
     sudo systemctl daemon-reload 2>/dev/null || true
     
-    sudo apt update -qq
-    sudo apt install -y ufw
+    sudo apt update -qq && sudo apt install -y ufw
     
+    # Install K3S
     curl -sfL https://get.k3s.io | K3S_TOKEN=$K3S_TOKEN sh -s - server --cluster-init --write-kubeconfig-mode 644 --bind-address 0.0.0.0 --advertise-address $LOCAL_IP
     
     print_status "Waiting for K3S to start..."
     sleep 30
     
-    # Check if K3S service is running
+    # Verify K3S is running
     if ! sudo systemctl is-active --quiet k3s; then
         print_error "K3S service is not running. Checking status..."
         sudo systemctl status k3s --no-pager
@@ -465,6 +478,7 @@ install_k3s() {
         exit 1
     fi
     
+    # Wait for API to be ready
     print_status "Waiting for K3S API to be ready..."
     timeout=300
     counter=0
@@ -488,14 +502,10 @@ install_k3s() {
         sudo journalctl -u k3s --no-pager -n 20 || true
         
         echo "=== System Resources ==="
-        free -h
-        df -h /
+        free -h && df -h /
         
         echo "=== Port Status ==="
         sudo netstat -tuln | grep -E ':(6443|2379|2380|8080)' || true
-        
-        echo "=== K3S Files ==="
-        ls -la /etc/rancher/k3s/ || true
         
         print_error "K3S startup failed. Please check the diagnostics above."
         print_status "Common solutions:"
@@ -506,28 +516,23 @@ install_k3s() {
         exit 1
     fi
     
-    sudo ufw allow 6443/tcp
-    sudo ufw allow 2379/tcp
-    sudo ufw allow 2380/tcp
-    sudo ufw allow 8080/tcp
-    sudo ufw allow 80/tcp
-    sudo ufw allow 443/tcp
-    
+    # Configure firewall
+    sudo ufw allow 6443/tcp && sudo ufw allow 2379/tcp && sudo ufw allow 2380/tcp
+    sudo ufw allow 8080/tcp && sudo ufw allow 80/tcp && sudo ufw allow 443/tcp
     sudo ufw insert 2 allow from any to any port 80 proto tcp comment "HTTP access"
-    
     sudo ufw reload
     
     print_success "K3S installed and running successfully"
 }
 
+# Install Helm package manager
 install_helm() {
     print_status "Installing Helm..."
-    
     curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
-    
     print_success "Helm installed successfully"
 }
 
+# Install ArgoCD GitOps controller
 install_argocd() {
     print_status "Installing ArgoCD..."
     
@@ -559,6 +564,7 @@ install_argocd() {
     print_success "ArgoCD installed successfully"
 }
 
+# Install K9s cluster management UI
 install_k9s() {
     print_status "Installing K9s..."
     
@@ -568,6 +574,7 @@ install_k9s() {
     sudo apt install -y ./k9s_linux_amd64.deb
     rm k9s_linux_amd64.deb
     
+    # Configure kubeconfig
     echo 'export KUBECONFIG=/etc/rancher/k3s/k3s.yaml' >> ~/.bashrc
     echo 'export KUBECONFIG=/etc/rancher/k3s/k3s.yaml' >> ~/.profile
     source ~/.bashrc
@@ -581,15 +588,19 @@ install_k9s() {
     print_success "K9s installed successfully"
 }
 
+# =============================================================================
+# ARGOCD CONFIGURATION
+# =============================================================================
+
+# Login to Helm registry
 helm_login() {
     print_status "Logging into Helm registry..."
-    
     export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
     helm registry login $CONTAINER_REGISTRY -u $CONTAINER_REGISTRY_USERNAME -p $CONTAINER_REGISTRY_PASSWORD
-    
     print_success "Helm registry login completed"
 }
 
+# Configure ArgoCD repositories
 configure_argocd_repositories() {
     print_status "Configuring ArgoCD repositories..."
     
@@ -628,6 +639,7 @@ EOF
     print_success "ArgoCD repositories configured"
 }
 
+# Deploy ArgoCD application
 deploy_argocd_application() {
     print_status "Deploying ArgoCD application..."
     
@@ -738,7 +750,7 @@ EOF
     print_success "ArgoCD application deployed"
 }
 
-# Function to update ArgoCD application
+# Update ArgoCD application (reapply manifest)
 update_argocd_application() {
     print_status "Updating ArgoCD application..."
     
@@ -750,7 +762,7 @@ update_argocd_application() {
         return
     fi
     
-    # REAPPLY THE ENTIRE MANIFEST FROM THE SCRIPT
+    # Reapply the entire manifest from the script
     print_status "Reapplying ArgoCD application manifest..."
     kubectl apply -f - <<EOF
 apiVersion: argoproj.io/v1alpha1
@@ -856,6 +868,11 @@ EOF
     print_status "Check ArgoCD UI for sync status: http://$DETECTED_IP:30080"
 }
 
+# =============================================================================
+# MAIN FUNCTIONS
+# =============================================================================
+
+# Display final information after installation
 display_final_info() {
     print_success "K3S setup completed successfully!"
     echo
@@ -896,6 +913,7 @@ display_final_info() {
     fi
 }
 
+# Main installation function
 main() {
     gum style \
         --border normal \
@@ -921,6 +939,7 @@ main() {
     
     show_installation_status
     
+    # Handle existing installations
     if [ "$K3S_INSTALLED" = "true" ] || [ "$HELM_INSTALLED" = "true" ] || [ "$ARGOCD_INSTALLED" = "true" ] || [ "$K9S_INSTALLED" = "true" ]; then
         print_warning "Some components are already installed!"
         
@@ -984,6 +1003,7 @@ main() {
     
     collect_user_input
     
+    # Install components (skip if already installed)
     if [ "$K3S_INSTALLED" != "true" ]; then
         install_k3s
     else
@@ -1013,6 +1033,38 @@ main() {
     deploy_argocd_application
     
     display_final_info
+}
+
+# =============================================================================
+# SCRIPT ENTRY POINT
+# =============================================================================
+
+# Initialize gum
+check_gum
+
+# Auto-download and run network setup if not already present
+auto_setup_network() {
+    if [ ! -f "./network-setup.sh" ]; then
+        print_status "Downloading network setup script..."
+        curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/Script/scripts/network-setup.sh -o network-setup.sh
+        chmod +x network-setup.sh
+        print_success "Network setup script downloaded"
+    fi
+    
+    if [ ! -f "./k3s-cleanup.sh" ]; then
+        print_status "Downloading cleanup script..."
+        curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/Script/scripts/k3s-cleanup.sh -o k3s-cleanup.sh
+        chmod +x k3s-cleanup.sh
+        print_success "Cleanup script downloaded"
+    fi
+    
+    # Run network setup if this is a fresh installation
+    if [ "$1" != "--update" ] && [ "$1" != "--help" ] && [ "$1" != "-h" ]; then
+        print_status "Running network setup check..."
+        ./network-setup.sh
+        echo
+        gum confirm "Continue with K3S installation?" --default=true || exit 0
+    fi
 }
 
 # Command line options
@@ -1063,6 +1115,8 @@ case "${1:-}" in
         echo "If no option is provided, interactive installation will be performed."
         ;;
     "")
+        # Auto-download scripts and run network setup
+        auto_setup_network "$1"
         main "$@"
         ;;
     *)
