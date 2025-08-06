@@ -98,9 +98,14 @@ prompt_input() {
     
     while true; do
         if [ -n "$default_value" ]; then
-            input=$(gum input --prompt "$prompt" --placeholder "$default_value" --value "$default_value")
+            input=$(gum input --prompt "$prompt" --placeholder "$default_value")
         else
             input=$(gum input --prompt "$prompt")
+        fi
+        
+        # Use default value if input is empty
+        if [ -z "$input" ] && [ -n "$default_value" ]; then
+            input="$default_value"
         fi
         
         if [ -z "$input" ]; then
@@ -129,12 +134,12 @@ prompt_boolean() {
     
     if [ -n "$default_value" ]; then
         if [ "$default_value" = "true" ]; then
-            gum confirm "$prompt" --default=true && echo "true" || echo "false"
+            gum confirm "$prompt" --default=true --affirmative="Yes" --negative="No" && echo "true" || echo "false"
         else
-            gum confirm "$prompt" --default=false && echo "true" || echo "false"
+            gum confirm "$prompt" --default=false --affirmative="Yes" --negative="No" && echo "true" || echo "false"
         fi
     else
-        gum confirm "$prompt" && echo "true" || echo "false"
+        gum confirm "$prompt" --affirmative="Yes" --negative="No" && echo "true" || echo "false"
     fi
 }
 
