@@ -97,13 +97,11 @@ prompt_input() {
     local default_value="$4"
     
     while true; do
-        echo
         if [ -n "$default_value" ]; then
-            echo "$prompt (default: $default_value)"
+            echo -n "$prompt [$default_value]: "
         else
-            echo "$prompt"
+            echo -n "$prompt: "
         fi
-        echo -n "> "
         read -r input
         
         # Use default value if input is empty
@@ -135,18 +133,29 @@ prompt_boolean() {
     local prompt="$1"
     local default_value="$2"
     
-    echo
-    if [ -n "$default_value" ]; then
-        if [ "$default_value" = "true" ]; then
-            echo "$prompt (default: Yes)"
+    while true; do
+        if [ -n "$default_value" ]; then
+            if [ "$default_value" = "true" ]; then
+                echo -n "$prompt (y/n) [y]: "
+            else
+                echo -n "$prompt (y/n) [n]: "
+            fi
         else
-            echo "$prompt (default: No)"
+            echo -n "$prompt (y/n): "
         fi
-        gum confirm --default="$default_value" --affirmative="Yes" --negative="No" && echo "true" || echo "false"
-    else
-        echo "$prompt"
-        gum confirm --affirmative="Yes" --negative="No" && echo "true" || echo "false"
-    fi
+        read -r input
+        
+        # Use default value if input is empty
+        if [ -z "$input" ] && [ -n "$default_value" ]; then
+            input="$default_value"
+        fi
+        
+        case $input in
+            [Yy]* ) echo "true"; return 0;;
+            [Nn]* ) echo "false"; return 0;;
+            * ) print_error "Please answer yes or no. Try again.";;
+        esac
+    done
 }
 
 generate_random_string() {
