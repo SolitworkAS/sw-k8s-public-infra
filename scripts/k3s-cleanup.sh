@@ -31,7 +31,7 @@ print_status() {
 }
 
 print_success() {
-    gum log --level success "$1"
+    gum log --level info "$1"
 }
 
 print_warning() {
@@ -53,12 +53,7 @@ check_root() {
 # Function to prompt for confirmation
 confirm_action() {
     local message="$1"
-    echo -n "$message (y/N): "
-    read -r response
-    case $response in
-        [Yy]* ) return 0;;
-        * ) return 1;;
-    esac
+    gum confirm "$message" --default=false
 }
 
 # Function to check if K3S is installed
@@ -319,27 +314,18 @@ full_cleanup() {
 # Function to perform partial cleanup
 partial_cleanup() {
     print_status "Partial cleanup options:"
-    echo "1. Cleanup ArgoCD only"
-    echo "2. Cleanup K3S only"
-    echo "3. Cleanup Helm only"
-    echo "4. Cleanup K9s only"
-    echo "5. Cleanup user files only"
-    echo "6. Cleanup firewall rules only"
-    echo "7. Cleanup containers only"
-    echo "8. Back to main menu"
     
-    echo -n "Select option (1-8): "
-    read -r choice
+    choice=$(echo -e "Cleanup ArgoCD only\nCleanup K3S only\nCleanup Helm only\nCleanup K9s only\nCleanup user files only\nCleanup firewall rules only\nCleanup containers only\nBack to main menu" | gum choose --header "Select cleanup option:")
     
     case $choice in
-        1) cleanup_argocd ;;
-        2) cleanup_k3s ;;
-        3) cleanup_helm ;;
-        4) cleanup_k9s ;;
-        5) cleanup_user_files ;;
-        6) cleanup_firewall ;;
-        7) cleanup_containers ;;
-        8) return ;;
+        "Cleanup ArgoCD only") cleanup_argocd ;;
+        "Cleanup K3S only") cleanup_k3s ;;
+        "Cleanup Helm only") cleanup_helm ;;
+        "Cleanup K9s only") cleanup_k9s ;;
+        "Cleanup user files only") cleanup_user_files ;;
+        "Cleanup firewall rules only") cleanup_firewall ;;
+        "Cleanup containers only") cleanup_containers ;;
+        "Back to main menu") return ;;
         *) print_error "Invalid option" ;;
     esac
 }
@@ -348,34 +334,30 @@ partial_cleanup() {
 main_menu() {
     while true; do
         echo
-        echo "=========================================="
-        echo "           K3S Cleanup Script"
-        echo "=========================================="
-        echo
-        show_status
-        echo "Options:"
-        echo "1. Show installation status"
-        echo "2. Resume installation"
-        echo "3. Partial cleanup"
-        echo "4. Full cleanup (removes everything)"
-        echo "5. Exit"
+        gum style \
+            --border normal \
+            --margin "1" \
+            --padding "1" \
+            --border-foreground 212 \
+            "K3S Cleanup Script" \
+            "Manage and cleanup K3S installations"
         echo
         
-        echo -n "Select option (1-5): "
-        read -r choice
+        show_status
+        
+        choice=$(echo -e "Show installation status\nResume installation\nPartial cleanup\nFull cleanup (removes everything)\nExit" | gum choose --header "Select option:")
         
         case $choice in
-            1) show_status ;;
-            2) resume_installation ;;
-            3) partial_cleanup ;;
-            4) full_cleanup ;;
-            5) print_status "Exiting..."; exit 0 ;;
+            "Show installation status") show_status ;;
+            "Resume installation") resume_installation ;;
+            "Partial cleanup") partial_cleanup ;;
+            "Full cleanup (removes everything)") full_cleanup ;;
+            "Exit") print_status "Exiting..."; exit 0 ;;
             *) print_error "Invalid option" ;;
         esac
         
         echo
-        echo "Press Enter to continue..."
-        read -r
+        gum confirm "Press Enter to continue..." --default=true || true
     done
 }
 

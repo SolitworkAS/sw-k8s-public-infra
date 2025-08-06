@@ -5,27 +5,41 @@
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Check if gum is installed, install if not
+check_gum() {
+    if ! command -v gum &> /dev/null; then
+        echo "Installing gum for better UI..."
+        if command -v apt-get &> /dev/null; then
+            sudo mkdir -p /etc/apt/keyrings
+            curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
+            echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
+            sudo apt update -qq && sudo apt install -y gum
+        elif command -v brew &> /dev/null; then
+            brew install charmbracelet/tap/gum
+        else
+            echo "Please install gum manually: https://github.com/charmbracelet/gum#installation"
+            exit 1
+        fi
+    fi
+}
+
+# Initialize gum
+check_gum
 
 print_status() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+    gum log --level info "$1"
 }
 
 print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+    gum log --level info "$1"
 }
 
 print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
+    gum log --level warn "$1"
 }
 
 print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    gum log --level error "$1"
 }
 
 # Function to detect network interfaces
@@ -196,9 +210,13 @@ troubleshooting_tips() {
 
 # Main function
 main() {
-    echo "=========================================="
-    echo "        K3S Network Setup Script"
-    echo "=========================================="
+    gum style \
+        --border normal \
+        --margin "1" \
+        --padding "1" \
+        --border-foreground 212 \
+        "K3S Network Setup Script" \
+        "Configure network settings for K3S deployment"
     echo
     
     if [ "$EUID" -eq 0 ]; then
@@ -216,10 +234,15 @@ main() {
     
     print_success "Network setup check completed!"
     echo
-    echo "Next steps:"
-    echo "1. Run the main K3S setup script: ./k3s-setup.sh"
-    echo "2. If you encounter issues, check the troubleshooting tips above"
-    echo "3. For private networks, consider setting up port forwarding"
+    gum style \
+        --border normal \
+        --margin "1" \
+        --padding "1" \
+        --border-foreground 57 \
+        "Next steps:" \
+        "1. Run the main K3S setup script: ./k3s-setup.sh" \
+        "2. If you encounter issues, check the troubleshooting tips above" \
+        "3. For private networks, consider setting up port forwarding"
 }
 
 # Run main function
