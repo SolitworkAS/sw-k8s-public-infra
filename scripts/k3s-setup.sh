@@ -99,7 +99,7 @@ prompt_input() {
         fi
         
         if [ -n "$validation_regex" ]; then
-            if [[ $input =~ $validation_regex ]]; then
+            if [[ "$input" =~ $validation_regex ]]; then
                 echo "$input"
                 return 0
             else
@@ -279,21 +279,28 @@ collect_user_input() {
     
     detect_network_config
     
-    CUSTOMER=$(prompt_input "Enter customer shorthand (lowercase letters and numbers only)" "^[a-z0-9]+$" "Customer must only contain lowercase letters and numbers")
-    
-    # Check if config file exists and load it
-    CONFIG_FILE="k3s-config-$CUSTOMER.env"
-    if [ -f "$CONFIG_FILE" ]; then
-        print_status "Found existing configuration file: $CONFIG_FILE"
-        echo -n "Load existing configuration? (y/n): "
-        read -r load_config
-        if [[ $load_config =~ ^[Yy]$ ]]; then
-            print_status "Loading configuration from $CONFIG_FILE..."
-            source "$CONFIG_FILE"
+    # Check for existing config files
+    existing_configs=($(ls k3s-config-*.env 2>/dev/null || true))
+    if [ ${#existing_configs[@]} -gt 0 ]; then
+        print_status "Found existing configuration files:"
+        for i in "${!existing_configs[@]}"; do
+            echo "  $((i+1)). ${existing_configs[$i]}"
+        done
+        echo "  $(( ${#existing_configs[@]} + 1 )). Create new configuration"
+        echo
+        echo -n "Select configuration (1-$(( ${#existing_configs[@]} + 1 ))): "
+        read -r config_choice
+        
+        if [ "$config_choice" -ge 1 ] && [ "$config_choice" -le "${#existing_configs[@]}" ]; then
+            selected_config="${existing_configs[$((config_choice-1))]}"
+            print_status "Loading configuration from $selected_config..."
+            source "$selected_config"
             print_success "Configuration loaded successfully"
             return 0
         fi
     fi
+    
+    CUSTOMER=$(prompt_input "Enter customer shorthand (lowercase letters and numbers only)" "^[a-z0-9]+$" "Customer must only contain lowercase letters and numbers")
     
     if [ "$IS_PRIVATE_NETWORK" = "true" ]; then
         print_warning "Private network detected. Using nip.io for local development."
@@ -311,8 +318,8 @@ collect_user_input() {
     CONTAINER_REGISTRY_PASSWORD=$(prompt_input "Enter container registry password" "^.+$" "Password cannot be empty")
     
     APP_ADMIN_EMAIL=$(prompt_input "Enter application admin email" "^[^@]+@[^@]+\.[^@]+$" "Must be a valid email address")
-    APP_ADMIN_FIRST_NAME=$(prompt_input "Enter application admin first name" "^.+$" "First name cannot be empty")
-    APP_ADMIN_LAST_NAME=$(prompt_input "Enter application admin last name" "^.+$" "Last name cannot be empty")
+    APP_ADMIN_FIRST_NAME=$(prompt_input "Enter application admin first name" "" "First name cannot be empty")
+    APP_ADMIN_LAST_NAME=$(prompt_input "Enter application admin last name" "" "Last name cannot be empty")
     
     K3S_TOKEN=$(prompt_input "Enter K3S token (or 'null' for auto-generation)" "" "" "null")
     if [ "$K3S_TOKEN" = "null" ]; then
@@ -426,6 +433,16 @@ EOF
 install_k3s() {
     print_status "Installing K3S..."
     
+    # Clean up any existing K3S installation
+    print_status "Cleaning up any existing K3S installation..."
+    sudo systemctl stop k3s 2>/dev/null || true
+    sudo systemctl disable k3s 2>/dev/null || true
+    sudo rm -rf /etc/rancher/k3s 2>/dev/null || true
+    sudo rm -rf /var/lib/rancher/k3s 2>/dev/null || true
+    sudo rm -f /usr/local/bin/k3s 2>/dev/null || true
+    sudo rm -f /etc/systemd/system/k3s.service 2>/dev/null || true
+    sudo systemctl daemon-reload 2>/dev/null || true
+    
     sudo apt update
     sudo apt install -y ufw
     
@@ -434,28 +451,60 @@ install_k3s() {
     print_status "Waiting for K3S to start..."
     sleep 30
     
+    # Check if K3S service is running
     if ! sudo systemctl is-active --quiet k3s; then
-        print_error "K3S failed to start. Checking logs..."
-        sudo journalctl -u k3s --no-pager -n 50
-        print_error "K3S startup failed. Please check the logs above for details."
+        print_error "K3S service is not running. Checking status..."
+        sudo systemctl status k3s --no-pager
+        print_error "K3S startup failed. Please check the status above."
         exit 1
     fi
     
+    print_status "K3S service is running, waiting for API to be ready..."
+    
     print_status "Waiting for K3S API to be ready..."
-    timeout=120
+    timeout=300
     counter=0
     while [ $counter -lt $timeout ]; do
         if kubectl get nodes &>/dev/null; then
             break
         fi
-        sleep 2
-        counter=$((counter + 2))
+        sleep 5
+        counter=$((counter + 5))
         echo -n "."
+        
+        # Show progress every 30 seconds
+        if [ $((counter % 30)) -eq 0 ]; then
+            echo " ($counter seconds)"
+        fi
     done
     echo
     
     if [ $counter -ge $timeout ]; then
         print_error "K3S API failed to become ready within $timeout seconds"
+        print_status "Running diagnostics..."
+        
+        echo "=== K3S Service Status ==="
+        sudo systemctl status k3s --no-pager || true
+        
+        echo "=== K3S Logs (last 20 lines) ==="
+        sudo journalctl -u k3s --no-pager -n 20 || true
+        
+        echo "=== System Resources ==="
+        free -h
+        df -h /
+        
+        echo "=== Port Status ==="
+        sudo netstat -tuln | grep -E ':(6443|2379|2380|8080)' || true
+        
+        echo "=== K3S Files ==="
+        ls -la /etc/rancher/k3s/ || true
+        
+        print_error "K3S startup failed. Please check the diagnostics above."
+        print_status "Common solutions:"
+        print_status "1. Disable swap: sudo swapoff -a"
+        print_status "2. Ensure sufficient memory (2GB+) and disk space (10GB+)"
+        print_status "3. Check if ports 6443, 2379, 2380 are available"
+        print_status "4. Try rebooting the system"
         exit 1
     fi
     
