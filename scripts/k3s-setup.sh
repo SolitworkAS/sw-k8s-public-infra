@@ -293,6 +293,7 @@ collect_user_input() {
         
         if [ "$config_choice" -ge 1 ] && [ "$config_choice" -le "${#existing_configs[@]}" ]; then
             selected_config="${existing_configs[$((config_choice-1))]}"
+            CONFIG_FILE="$selected_config"
             print_status "Loading configuration from $selected_config..."
             source "$selected_config"
             print_success "Configuration loaded successfully"
@@ -301,6 +302,7 @@ collect_user_input() {
     fi
     
     CUSTOMER=$(prompt_input "Enter customer shorthand (lowercase letters and numbers only)" "^[a-z0-9]+$" "Customer must only contain lowercase letters and numbers")
+    CONFIG_FILE="k3s-config-$CUSTOMER.env"
     
     if [ "$IS_PRIVATE_NETWORK" = "true" ]; then
         print_warning "Private network detected. Using nip.io for local development."
