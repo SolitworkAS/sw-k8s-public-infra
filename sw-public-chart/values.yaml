@@ -15,7 +15,7 @@ sw-private-chart:
     domain: "afcdemo.com"
 
     dex:
-      version: "2025.05.2"
+      version: "latest"
       connectors:
         github:
           enabled: false
