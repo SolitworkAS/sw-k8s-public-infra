@@ -46,6 +46,8 @@ The script prompts for:
 - OAuth/SSO settings (optional)
 - Deployment options
 
+**Configuration files**: Settings are saved to `k3s-config-<customer>.env` and can be reloaded on subsequent runs.
+
 ## Network Support
 
 - **Public networks**: Uses detected public IP

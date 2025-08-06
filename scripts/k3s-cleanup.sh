@@ -224,6 +224,10 @@ cleanup_user_files() {
     rm -f k3s-setup.sh || true
     rm -f network-setup.sh || true
     
+    # Remove configuration files
+    print_status "Removing configuration files..."
+    rm -f k3s-config-*.env || true
+    
     print_success "User files cleanup completed"
 }
 

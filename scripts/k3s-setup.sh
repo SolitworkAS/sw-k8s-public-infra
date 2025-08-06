@@ -281,6 +281,20 @@ collect_user_input() {
     
     CUSTOMER=$(prompt_input "Enter customer shorthand (lowercase letters and numbers only)" "^[a-z0-9]+$" "Customer must only contain lowercase letters and numbers")
     
+    # Check if config file exists and load it
+    CONFIG_FILE="k3s-config-$CUSTOMER.env"
+    if [ -f "$CONFIG_FILE" ]; then
+        print_status "Found existing configuration file: $CONFIG_FILE"
+        echo -n "Load existing configuration? (y/n): "
+        read -r load_config
+        if [[ $load_config =~ ^[Yy]$ ]]; then
+            print_status "Loading configuration from $CONFIG_FILE..."
+            source "$CONFIG_FILE"
+            print_success "Configuration loaded successfully"
+            return 0
+        fi
+    fi
+    
     if [ "$IS_PRIVATE_NETWORK" = "true" ]; then
         print_warning "Private network detected. Using nip.io for local development."
         DOMAIN=$(prompt_input "Enter domain for nip.io (e.g., myapp)" "" "" "myapp")
@@ -340,6 +354,73 @@ collect_user_input() {
     MINIO_ROOT_PASSWORD=$(generate_random_password 16)
     
     print_success "Configuration parameters collected"
+    
+    # Save configuration to file
+    save_configuration
+}
+
+save_configuration() {
+    print_status "Saving configuration to $CONFIG_FILE..."
+    
+    cat > "$CONFIG_FILE" <<EOF
+# K3S Configuration for $CUSTOMER
+# Generated on $(date)
+
+# Network Configuration
+DETECTED_IP="$DETECTED_IP"
+LOCAL_IP="$LOCAL_IP"
+IS_PRIVATE_NETWORK="$IS_PRIVATE_NETWORK"
+
+# Customer Configuration
+CUSTOMER="$CUSTOMER"
+DOMAIN="$DOMAIN"
+SELF_HOSTED="$SELF_HOSTED"
+
+# Container Registry
+CONTAINER_REGISTRY="$CONTAINER_REGISTRY"
+CONTAINER_REGISTRY_USERNAME="$CONTAINER_REGISTRY_USERNAME"
+CONTAINER_REGISTRY_PASSWORD="$CONTAINER_REGISTRY_PASSWORD"
+
+# Application Admin
+APP_ADMIN_EMAIL="$APP_ADMIN_EMAIL"
+APP_ADMIN_FIRST_NAME="$APP_ADMIN_FIRST_NAME"
+APP_ADMIN_LAST_NAME="$APP_ADMIN_LAST_NAME"
+
+# K3S Configuration
+K3S_TOKEN="$K3S_TOKEN"
+DEPLOYMENT_REVISION="$DEPLOYMENT_REVISION"
+DEPLOY_DA_APP="$DEPLOY_DA_APP"
+DEPLOY_FC_APP="$DEPLOY_FC_APP"
+
+# OAuth/SSO Configuration
+GITHUB_CLIENT_ID="$GITHUB_CLIENT_ID"
+GITHUB_CLIENT_SECRET="$GITHUB_CLIENT_SECRET"
+SSO_ISSUER="$SSO_ISSUER"
+SSO_CLIENT_ID="$SSO_CLIENT_ID"
+SSO_CLIENT_SECRET="$SSO_CLIENT_SECRET"
+MICROSOFT_CLIENT_ID="$MICROSOFT_CLIENT_ID"
+MICROSOFT_CLIENT_SECRET="$MICROSOFT_CLIENT_SECRET"
+INTUIT_CLIENT_ID="$INTUIT_CLIENT_ID"
+INTUIT_CLIENT_SECRET="$INTUIT_CLIENT_SECRET"
+INTUIT_REDIRECT_URI="$INTUIT_REDIRECT_URI"
+ENCRYPTION_KEY="$ENCRYPTION_KEY"
+
+# Generated Credentials
+POSTGRES_DATABASE="$POSTGRES_DATABASE"
+POSTGRES_USERNAME="$POSTGRES_USERNAME"
+POSTGRES_PASSWORD="$POSTGRES_PASSWORD"
+BI_DEV_ROLE="$BI_DEV_ROLE"
+ARGOWORKFLOWS_USERNAME="$ARGOWORKFLOWS_USERNAME"
+ARGOWORKFLOWS_PASSWORD="$ARGOWORKFLOWS_PASSWORD"
+FC_USER="$FC_USER"
+FC_PASSWORD="$FC_PASSWORD"
+FC_DATABASE="$FC_DATABASE"
+MINIO_ROOT_USER="$MINIO_ROOT_USER"
+MINIO_ROOT_PASSWORD="$MINIO_ROOT_PASSWORD"
+EOF
+    
+    chmod 600 "$CONFIG_FILE"
+    print_success "Configuration saved to $CONFIG_FILE"
 }
 
 install_k3s() {
