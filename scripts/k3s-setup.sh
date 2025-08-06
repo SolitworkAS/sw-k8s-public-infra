@@ -28,7 +28,7 @@ print_status() {
 }
 
 print_success() {
-    gum log --level success "$1"
+    gum log --level info "$1"
 }
 
 print_warning() {
