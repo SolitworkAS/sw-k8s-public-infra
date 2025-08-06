@@ -99,11 +99,10 @@ prompt_input() {
     while true; do
         echo
         if [ -n "$default_value" ]; then
-            echo "$prompt"
-            echo "Default: $default_value"
+            gum style --border normal --margin "1" --padding "1" --border-foreground 57 "$prompt" "Default: $default_value"
             input=$(gum input --prompt "> " --placeholder "Press Enter for default or type your value")
         else
-            echo "$prompt"
+            gum style --border normal --margin "1" --padding "1" --border-foreground 57 "$prompt"
             input=$(gum input --prompt "> ")
         fi
         
