@@ -1,123 +1,130 @@
 # K3S Setup Scripts
 
-Scripts for setting up K3S, ArgoCD, and related components on Ubuntu systems.
+**Simple scripts to set up a Kubernetes cluster with ArgoCD on Ubuntu systems.**
 
-## Scripts
+## What This Does
 
-### `k3s-setup.sh` - Main Setup Script
-- Installs K3S, Helm, ArgoCD, and K9s
-- Detects network configuration automatically
-- Configures nip.io domains for private networks
-- Handles resume from partial installations
+This script automatically installs and configures:
+- **K3S** - A lightweight Kubernetes cluster
+- **ArgoCD** - A web interface to manage your applications
+- **Helm** - Package manager for Kubernetes
+- **K9s** - A terminal-based tool to manage your cluster
 
-### `network-setup.sh` - Network Helper
-- Diagnoses network configuration
-- Tests connectivity and port availability
-- Configures firewall rules
 
-### `k3s-cleanup.sh` - Cleanup Script
-- Removes installed components
-- Shows installation status
-- Supports partial cleanup
+## Quick Installation
 
-## Quick Start
-
+### Option 1: One-liner (Recommended)
 ```bash
-# One-liner installation (recommended)
 curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/Script/scripts/k3s-setup.sh | bash
+```
 
-# Or download and run manually
+### Option 2: Download and run
+```bash
 curl -fsSL https://raw.githubusercontent.com/SolitworkAS/sw-k8s-public-infra/Script/scripts/k3s-setup.sh -o k3s-setup.sh
 chmod +x k3s-setup.sh
 ./k3s-setup.sh
 ```
 
-**Note**: The script automatically downloads and runs the network setup check before installation.
+**What happens when you run it:**
+1. Downloads additional helper scripts automatically
+2. Checks your network and system requirements
+3. Asks you a few questions about your setup
+4. Installs everything automatically
+5. Shows you how to access the web interface
 
-## Updating ArgoCD Application
+## System Requirements
 
-After initial installation, you can update the ArgoCD application with the latest configuration:
+**Before running the script, make sure you have:**
+
+- **Operating System**: Ubuntu or Debian Linux
+- **User**: A regular user account (NOT root) with sudo privileges
+- **Internet**: Working internet connection
+- **Hardware**: 
+  - At least 2GB RAM
+  - At least 10GB free disk space
+- **Network**: Ports 6443, 30080, 80, 443 should be available
+
+## What You'll Need to Provide
+
+The script will ask you for:
+- **Customer name** (lowercase letters and numbers only)
+- **Domain name** (or app name for local development)
+- **Container registry** credentials (username/password)
+- **Admin user** details (email, first name, last name)
+- **Optional settings** like OAuth/SSO (you can skip these)
+
+## After Installation
+
+Once complete, you'll have access to:
+- **ArgoCD Web Interface**: `http://YOUR_SERVER_IP:30080`
+- **Configuration file**: `~/kubeconfig.yaml` (for command line access)
+- **Domain**: Your configured domain or local development domain
+
+## Updating Your Setup
+
+If you need to update the configuration later:
 
 ```bash
-# Interactive update (selects configuration automatically)
 ./k3s-setup.sh --update
-
-# Or use the cleanup script menu
-./k3s-cleanup.sh
-# Then select "Update ArgoCD application"
 ```
 
-## Configuration
-
-The script prompts for:
-- Customer name (lowercase, alphanumeric)
-- Domain (or app name for nip.io)
-- Container registry credentials
-- Application admin details
-- OAuth/SSO settings (optional)
-- Deployment options
-
-**Configuration files**: Settings are saved to `k3s-config-<customer>.env` and can be reloaded on subsequent runs.
-
-## Network Support
-
-- **Public networks**: Uses detected public IP
-- **Private networks**: Automatically configures nip.io domains
-- **Local development**: Uses local IP addresses
-
-## Access
-
-After installation:
-- **ArgoCD UI**: `http://<ip>:30080`
-- **Kubeconfig**: `~/kubeconfig.yaml`
-- **Domain**: Configured domain or nip.io domain
-
-## Cleanup
-
-```bash
-# Interactive menu
-./k3s-cleanup.sh
-
-# Command-line options
-./k3s-cleanup.sh --status              # Show status
-./k3s-cleanup.sh --resume              # Resume installation
-./k3s-cleanup.sh --cleanup-all         # Remove everything
-```
-
-## Command Line Options
-
-### k3s-setup.sh
-```bash
-./k3s-setup.sh --update                # Update ArgoCD application only
-./k3s-setup.sh --help                  # Show help
-```
+This will:
+- Load your existing configuration
+- Apply any new settings from the script
+- Update your ArgoCD applications
 
 ## Troubleshooting
 
-### Common Issues
+### Common Problems
 
-1. **K3S fails to start**
-   - Check resources: `free -h && df -h`
-   - Check logs: `sudo journalctl -u k3s -f`
-   - Disable swap: `sudo swapoff -a`
+**1. Script fails to start**
+- Make sure you're not running as root
+- Check you have internet connection
+- Verify you have at least 2GB RAM and 10GB disk space
 
-2. **ArgoCD not accessible**
-   - Check pods: `kubectl get pods -n argocd`
-   - Check service: `kubectl get svc -n argocd`
-   - Check firewall: `sudo ufw status`
+**2. Can't access the web interface**
+- Check if the script completed successfully
+- Try accessing `http://localhost:30080` from the server
+- Check firewall settings: `sudo ufw status`
 
-3. **nip.io domains not working**
-   - Test: `nslookup test.127.0.0.1.nip.io`
-   - Use local IP directly if needed
+**3. K3S won't start**
+- Disable swap: `sudo swapoff -a`
+- Check system resources: `free -h && df -h`
+- Look at logs: `sudo journalctl -u k3s -f`
 
-### Network Issues
+### Getting Help
 
-- **Private networks**: Use SSH port forwarding or ngrok
-- **Corporate networks**: Check proxy and firewall settings
+If you encounter issues:
+1. Check the error messages in the terminal
+2. Look at the troubleshooting section above
+3. Check system resources and network connectivity
+4. Try running the cleanup script and starting fresh
 
-## Prerequisites
+## Cleanup (If Needed)
 
-- Ubuntu/Debian system
-- Non-root user with sudo privileges
-- Internet connectivity
-- At least 2GB RAM, 10GB disk space 
+To remove everything and start over:
+
+```bash
+./k3s-cleanup.sh
+```
+
+This will show you options to:
+- Remove specific components
+- Remove everything and start fresh
+- Check what's currently installed
+
+## Script Files
+
+The installation creates these files:
+- `k3s-setup.sh` - Main installation script
+- `network-setup.sh` - Network diagnostics (downloaded automatically)
+- `k3s-cleanup.sh` - Cleanup script (downloaded automatically)
+- `k3s-config-*.env` - Your configuration files
+
+## Need More Help?
+
+If you're still having trouble:
+1. Check that your system meets all requirements
+2. Make sure you have a stable internet connection
+3. Try running the network setup first: `./network-setup.sh`
+4. Check the logs for specific error messages 

@@ -905,6 +905,18 @@ display_final_info() {
     echo "3. Use 'k9s' for cluster management"
     echo "4. Export KUBECONFIG: export KUBECONFIG=$USER_HOME/kubeconfig.yaml"
     echo
+    echo "=== Application Access ==="
+    echo "Your applications will be available at:"
+    if [ "$DEPLOY_DA_APP" = "true" ]; then
+        echo "  DA App: https://$CUSTOMER.$DOMAIN/da"
+    fi
+    if [ "$DEPLOY_FC_APP" = "true" ]; then
+        echo "  FC App: https://$CUSTOMER.$DOMAIN/fc"
+    fi
+    if [ "$DEPLOY_DA_APP" != "true" ] && [ "$DEPLOY_FC_APP" != "true" ]; then
+        echo "  No applications were configured for deployment"
+    fi
+    echo
     if [ "$IS_PRIVATE_NETWORK" = "true" ]; then
         echo "=== Private Network Notes ==="
         echo "You are running on a private network. External access may be limited."
