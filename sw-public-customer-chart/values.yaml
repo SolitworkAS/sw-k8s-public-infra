@@ -5,6 +5,7 @@ global:
     username: "my-registry-user"
     password: "supersecurepassword"
   domain: "afcdemo.com"
+  hosted: "auth"
 
 customer-chart: 
   namespace: "customera"

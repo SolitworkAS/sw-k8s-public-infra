@@ -514,14 +514,15 @@ spec:
   project: default
   source:
     repoURL: "https://github.com/SolitworkAS/sw-k8s-public-infra"
-    targetRevision: "$DEPLOYMENT_REVISION"
+    targetRevision: "Script"
     path: "sw-public-chart"
-    helm:
-      values: |
-        global:
-          selfhosted: "$CUSTOMER"
-          domain: "$DOMAIN"
-          publicIp: "$DETECTED_IP"
+            helm:
+          values: |
+            global:
+              selfhosted: "$CUSTOMER"
+              hosted: "$([ "$SELF_HOSTED" = "true" ] && echo "$CUSTOMER" || echo "")"
+              domain: "$DOMAIN"
+              publicIp: "$DETECTED_IP"
           container:
             registry: "$CONTAINER_REGISTRY"
             username: "$CONTAINER_REGISTRY_USERNAME"
