@@ -467,17 +467,12 @@ install_k3s() {
     timeout=300
     counter=0
     while [ $counter -lt $timeout ]; do
-        if kubectl get nodes &>/dev/null; then
+        if sudo kubectl get nodes &>/dev/null; then
             break
         fi
         sleep 5
         counter=$((counter + 5))
         echo -n "."
-        
-        # Show progress every 30 seconds
-        if [ $((counter % 30)) -eq 0 ]; then
-            echo " ($counter seconds)"
-        fi
     done
     echo
     
