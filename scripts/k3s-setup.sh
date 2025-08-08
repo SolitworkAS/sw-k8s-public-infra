@@ -374,7 +374,8 @@ collect_user_input() {
     DEPLOY_DA_APP="true"
     DEPLOY_FC_APP=$(prompt_boolean "Deploy Financial Close application?" "false")
     
-    # OAuth/SSO configuration removed (handled via private chart defaults)
+    # OAuth/SSO configuration (only for hosted deployments)
+    # Dex configuration removed entirely; handled by private chart defaults
     
     # Intuit configuration (only for non-self-hosted)
     if [ "$SELF_HOSTED" = "true" ]; then
@@ -693,7 +694,6 @@ spec:
             encryptionKey: "$ENCRYPTION_KEY"
         sw-private-chart:
           environment-chart:
-            dex: {}
             namespace: "environment"
             domain: "$DOMAIN"
             minio:
@@ -768,6 +768,7 @@ update_argocd_application() {
     
     # Reapply the entire manifest from the script
     print_status "Reapplying ArgoCD application manifest..."
+
     kubectl apply -f - <<EOF
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -801,7 +802,6 @@ spec:
             encryptionKey: "$ENCRYPTION_KEY"
         sw-private-chart:
           environment-chart:
-            dex: {}
             namespace: "environment"
             domain: "$DOMAIN"
             minio:
