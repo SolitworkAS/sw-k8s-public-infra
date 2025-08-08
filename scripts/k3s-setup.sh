@@ -37,6 +37,40 @@ check_gum() {
     fi
 }
 
+# =============================================================================
+# CLI FLAG PARSING
+# =============================================================================
+
+# Defaults
+SELF_HOSTED=true
+CUSTOM_DOMAIN=""
+
+parse_cli_flags() {
+    local skip_next=false
+    for arg in "$@"; do
+        if [ "$skip_next" = true ]; then
+            skip_next=false
+            continue
+        fi
+        case "$arg" in
+            --swdeployment)
+                # Hosted (cloud) deployment
+                SELF_HOSTED=false
+                ;;
+            --custom-domain)
+                # Next argument must be the domain value
+                skip_next=true
+                ;;
+            *)
+                if [ "$skip_next" = true ] && [ -z "$CUSTOM_DOMAIN" ]; then
+                    CUSTOM_DOMAIN="$arg"
+                    skip_next=false
+                fi
+                ;;
+        esac
+    done
+}
+
 # Print functions for consistent UI
 print_status() { gum log --level info "$1"; }
 print_success() { gum style --foreground 10 "✅ $1"; }
@@ -303,52 +337,44 @@ collect_user_input() {
     fi
     
     # Collect new configuration
-    CUSTOMER=$(prompt_input "Customer:" "^[a-z0-9]+$" "Customer must only contain lowercase letters and numbers")
+    CUSTOMER=$(prompt_input "Company name (lowercase letters and numbers only):" "^[a-z0-9]+$" "Company name must only contain lowercase letters and numbers")
     CONFIG_FILE="k3s-config-$CUSTOMER.env"
     
-    # Domain configuration
-    if [ "$IS_PRIVATE_NETWORK" = "true" ]; then
-        print_warning "Private network detected. Using nip.io for local development."
-        DOMAIN=$(prompt_input "Domain for nip.io:" "" "" "myapp")
-        DOMAIN="${DOMAIN}.${DETECTED_IP}.nip.io"
-        print_status "Using nip.io domain: $DOMAIN"
+    # Domain configuration via flag (default afcsoftware.com)
+    if [ -n "$CUSTOM_DOMAIN" ]; then
+        DOMAIN="$CUSTOM_DOMAIN"
     else
-        DOMAIN=$(prompt_input "Domain:" "" "" "afcsoftware.com")
+        DOMAIN="afcsoftware.com"
     fi
     
-    SELF_HOSTED=$(prompt_boolean "Is this self-hosted?" "true")
-    
     # Container registry
-    CONTAINER_REGISTRY=$(prompt_input "Container registry URL:" "" "" "imagesdevregistry.azurecr.io")
-    CONTAINER_REGISTRY_USERNAME=$(prompt_input "Container registry username:" "^.+$" "Username cannot be empty")
-    CONTAINER_REGISTRY_PASSWORD=$(prompt_input "Container registry password:" "^.+$" "Password cannot be empty")
+    if [ "$SELF_HOSTED" = "true" ]; then
+        CONTAINER_REGISTRY="swimagereg.azurecr.io"
+        CONTAINER_REGISTRY_USERNAME=$(prompt_input "Container registry username:" "^.+$" "Username cannot be empty")
+        CONTAINER_REGISTRY_PASSWORD=$(prompt_input "Container registry password:" "^.+$" "Password cannot be empty")
+    else
+        CONTAINER_REGISTRY=$(prompt_input "Container registry URL:" "" "" "imagesdevregistry.azurecr.io")
+        CONTAINER_REGISTRY_USERNAME=$(prompt_input "Container registry username:" "^.+$" "Username cannot be empty")
+        CONTAINER_REGISTRY_PASSWORD=$(prompt_input "Container registry password:" "^.+$" "Password cannot be empty")
+    fi
     
     # Application admin
     APP_ADMIN_EMAIL=$(prompt_input "Application admin email:" "^[^@]+@[^@]+\.[^@]+$" "Must be a valid email address")
-    APP_ADMIN_FIRST_NAME=$(prompt_input "Application admin first name:" "" "First name cannot be empty")
-    APP_ADMIN_LAST_NAME=$(prompt_input "Application admin last name:" "" "Last name cannot be empty")
     
     # K3S configuration
-    K3S_TOKEN=$(prompt_input "K3S token (or 'null' for auto-generation):" "" "" "null")
-    if [ "$K3S_TOKEN" = "null" ]; then
-        K3S_TOKEN=$(generate_random_string 32)
-        print_status "Generated K3S token: $K3S_TOKEN"
+    K3S_TOKEN=$(generate_random_string 32)
+    print_status "Generated K3S token"
+    
+    if [ "$SELF_HOSTED" = "true" ]; then
+        DEPLOYMENT_REVISION="HEAD"
+    else
+        DEPLOYMENT_REVISION=$(prompt_input "Deployment revision:" "" "" "HEAD")
     fi
     
-    DEPLOYMENT_REVISION=$(prompt_input "Deployment revision:" "" "" "HEAD")
-    DEPLOY_DA_APP=$(prompt_boolean "Deploy DA app?" "false")
-    DEPLOY_FC_APP=$(prompt_boolean "Deploy FC app?" "false")
+    DEPLOY_DA_APP="true"
+    DEPLOY_FC_APP=$(prompt_boolean "Deploy Financial Close application?" "false")
     
-    # OAuth/SSO configuration
-    GITHUB_CLIENT_ID=$(prompt_optional "GitHub client ID")
-    GITHUB_CLIENT_SECRET=$(prompt_optional "GitHub client secret")
-    
-    SSO_ISSUER=$(prompt_optional "SSO issuer")
-    SSO_CLIENT_ID=$(prompt_optional "SSO client ID")
-    SSO_CLIENT_SECRET=$(prompt_optional "SSO client secret")
-    
-    MICROSOFT_CLIENT_ID=$(prompt_optional "Microsoft client ID")
-    MICROSOFT_CLIENT_SECRET=$(prompt_optional "Microsoft client secret")
+    # OAuth/SSO configuration removed (handled via private chart defaults)
     
     # Intuit configuration (only for non-self-hosted)
     if [ "$SELF_HOSTED" = "true" ]; then
@@ -407,8 +433,6 @@ CONTAINER_REGISTRY_PASSWORD="$CONTAINER_REGISTRY_PASSWORD"
 
 # Application Admin
 APP_ADMIN_EMAIL="$APP_ADMIN_EMAIL"
-APP_ADMIN_FIRST_NAME="$APP_ADMIN_FIRST_NAME"
-APP_ADMIN_LAST_NAME="$APP_ADMIN_LAST_NAME"
 
 # K3S Configuration
 K3S_TOKEN="$K3S_TOKEN"
@@ -416,14 +440,7 @@ DEPLOYMENT_REVISION="$DEPLOYMENT_REVISION"
 DEPLOY_DA_APP="$DEPLOY_DA_APP"
 DEPLOY_FC_APP="$DEPLOY_FC_APP"
 
-# OAuth/SSO Configuration
-GITHUB_CLIENT_ID="$GITHUB_CLIENT_ID"
-GITHUB_CLIENT_SECRET="$GITHUB_CLIENT_SECRET"
-SSO_ISSUER="$SSO_ISSUER"
-SSO_CLIENT_ID="$SSO_CLIENT_ID"
-SSO_CLIENT_SECRET="$SSO_CLIENT_SECRET"
-MICROSOFT_CLIENT_ID="$MICROSOFT_CLIENT_ID"
-MICROSOFT_CLIENT_SECRET="$MICROSOFT_CLIENT_SECRET"
+# OAuth/SSO Configuration (handled via private chart)
 INTUIT_CLIENT_ID="$INTUIT_CLIENT_ID"
 INTUIT_CLIENT_SECRET="$INTUIT_CLIENT_SECRET"
 INTUIT_REDIRECT_URI="$INTUIT_REDIRECT_URI"
@@ -658,8 +675,8 @@ spec:
     helm:
       values: |
         global:
-          selfhosted: "$CUSTOMER"
-          hosted: "$([ "$SELF_HOSTED" = "true" ] && echo "$CUSTOMER" || echo "")"
+          selfhosted: "$([ "$SELF_HOSTED" = "true" ] && echo "$CUSTOMER" || echo "")"
+          hosted: "$([ "$SELF_HOSTED" = "false" ] && echo "$CUSTOMER" || echo "")"
           domain: "$DOMAIN"
           publicIp: "$DETECTED_IP"
           container:
@@ -676,18 +693,7 @@ spec:
             encryptionKey: "$ENCRYPTION_KEY"
         sw-private-chart:
           environment-chart:
-            dex:
-              connectors:
-                github:
-                  clientID: "$GITHUB_CLIENT_ID"
-                  clientSecret: "$GITHUB_CLIENT_SECRET"
-                solitwork:
-                  clientID: "$SSO_CLIENT_ID"
-                  clientSecret: "$SSO_CLIENT_SECRET"
-                  issuer: "$SSO_ISSUER"
-                microsoft:
-                  clientID: "$MICROSOFT_CLIENT_ID"
-                  clientSecret: "$MICROSOFT_CLIENT_SECRET"
+            dex: {}
             namespace: "environment"
             domain: "$DOMAIN"
             minio:
@@ -705,8 +711,6 @@ spec:
             namespace: "$CUSTOMER"
             appAdmin:
               email: "$APP_ADMIN_EMAIL"
-              firstName: "$APP_ADMIN_FIRST_NAME"
-              lastName: "$APP_ADMIN_LAST_NAME"
             postgres:
               database: "$POSTGRES_DATABASE"
               username: "$POSTGRES_USERNAME"
@@ -779,8 +783,8 @@ spec:
     helm:
       values: |
         global:
-          selfhosted: "$CUSTOMER"
-          hosted: "$([ "$SELF_HOSTED" = "true" ] && echo "$CUSTOMER" || echo "")"
+          selfhosted: "$([ "$SELF_HOSTED" = "true" ] && echo "$CUSTOMER" || echo "")"
+          hosted: "$([ "$SELF_HOSTED" = "false" ] && echo "$CUSTOMER" || echo "")"
           domain: "$DOMAIN"
           publicIp: "$DETECTED_IP"
           container:
@@ -797,18 +801,7 @@ spec:
             encryptionKey: "$ENCRYPTION_KEY"
         sw-private-chart:
           environment-chart:
-            dex:
-              connectors:
-                github:
-                  clientID: "$GITHUB_CLIENT_ID"
-                  clientSecret: "$GITHUB_CLIENT_SECRET"
-                solitwork:
-                  clientID: "$SSO_CLIENT_ID"
-                  clientSecret: "$SSO_CLIENT_SECRET"
-                  issuer: "$SSO_ISSUER"
-                microsoft:
-                  clientID: "$MICROSOFT_CLIENT_ID"
-                  clientSecret: "$MICROSOFT_CLIENT_SECRET"
+            dex: {}
             namespace: "environment"
             domain: "$DOMAIN"
             minio:
@@ -826,8 +819,6 @@ spec:
             namespace: "$CUSTOMER"
             appAdmin:
               email: "$APP_ADMIN_EMAIL"
-              firstName: "$APP_ADMIN_FIRST_NAME"
-              lastName: "$APP_ADMIN_LAST_NAME"
             postgres:
               database: "$POSTGRES_DATABASE"
               username: "$POSTGRES_USERNAME"
@@ -921,7 +912,6 @@ display_final_info() {
         echo "=== Private Network Notes ==="
         echo "You are running on a private network. External access may be limited."
         echo "Consider setting up port forwarding or VPN for external access."
-        echo "The nip.io domain ($DOMAIN) will resolve to your local IP for testing."
     fi
 }
 
@@ -1075,7 +1065,7 @@ auto_setup_network() {
         print_status "Running network setup check..."
         ./network-setup.sh
         echo
-        gum confirm "Continue with K3S installation?" --default=true || exit 0
+        print_status "Continuing with K3S installation..."
     fi
 }
 
@@ -1118,17 +1108,26 @@ case "${1:-}" in
         exit 0
         ;;
     --help|-h)
-        echo "Usage: $0 [OPTION]"
+        echo "Usage: $0 [OPTIONS]"
         echo
         echo "Options:"
         echo "  --update              Update ArgoCD application only (requires existing config)"
+        echo "  --swdeployment        Hosted deployment (not self-hosted)"
+        echo "  --custom-domain <d>   Override domain (default: afcsoftware.com)"
         echo "  --help, -h            Show this help message"
         echo
         echo "If no option is provided, interactive installation will be performed."
         ;;
+    --swdeployment|--custom-domain)
+        # Run normal flow with flags parsed
+        auto_setup_network "$1"
+        parse_cli_flags "$@"
+        main "$@"
+        ;;
     "")
         # Auto-download scripts and run network setup
         auto_setup_network "$1"
+        parse_cli_flags "$@"
         main "$@"
         ;;
     *)
