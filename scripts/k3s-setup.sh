@@ -38,6 +38,27 @@ check_gum() {
 }
 
 # =============================================================================
+# CONFIGURATION MANAGEMENT
+# =============================================================================
+
+configure_argocd_health_scripts() {
+  print_status "Installing Argo CD health script for CloudNativePG Cluster..."
+  # Nil-safe health.lua for postgresql.cnpg.io/Cluster
+  kubectl patch configmap argocd-cm -n argocd --type merge -p "$(cat <<'JSON'
+{
+  "data": {
+    "resource.customizations.health.postgresql.cnpg.io_Cluster": "hs = {}\n\nif obj.status == nil then\n  hs.status = \"Progressing\"\n  hs.message = \"Waiting for Cluster status\"\n  return hs\nend\n\nlocal phase = obj.status.phase or \"Unknown\"\nlocal reason = (type(obj.status.phaseReason) == \"string\" and obj.status.phaseReason ~= \"\") and obj.status.phaseReason or nil\n\nif phase == \"Running\" then\n  hs.status = \"Healthy\"\nelseif phase == \"Failed\" then\n  hs.status = \"Degraded\"\nelseif phase == \"Creating\" or phase == \"Initializing\" or phase == \"Pending\" or phase == \"Updating\" then\n  hs.status = \"Progressing\"\nelse\n  hs.status = \"Unknown\"\nend\n\nhs.message = reason and (phase .. \": \" .. reason) or phase\nreturn hs\n"
+  }
+}
+JSON
+)"
+  # Argo CD components cache config; restart so the script is loaded
+  kubectl rollout restart deploy/argocd-repo-server -n argocd || true
+  kubectl rollout restart deploy/argocd-application-controller -n argocd || true
+  print_success "Health script configured"
+}
+
+# =============================================================================
 # CLI FLAG PARSING
 # =============================================================================
 
@@ -1021,6 +1042,7 @@ main() {
     if [ "$ARGOCD_INSTALLED" != "true" ]; then
         install_argocd
     else
+        
         print_status "ArgoCD already installed, skipping..."
     fi
     
@@ -1033,6 +1055,7 @@ main() {
     helm_login
     configure_argocd_repositories
     deploy_argocd_application
+    configure_argocd_health_scripts
     
     display_final_info
 }
