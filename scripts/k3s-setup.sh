@@ -52,11 +52,12 @@ configure_argocd_health_scripts() {
 }
 JSON
 )"
-  # Argo CD components cache config; restart so the script is loaded
+  # Restart components that cache config
   kubectl rollout restart deploy/argocd-repo-server -n argocd || true
-  kubectl rollout restart deploy/argocd-application-controller -n argocd || true
+  kubectl rollout restart sts/argocd-application-controller -n argocd || true
   print_success "Health script configured"
 }
+
 
 # =============================================================================
 # CLI FLAG PARSING
