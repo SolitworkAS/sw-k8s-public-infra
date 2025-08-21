@@ -38,6 +38,29 @@ check_gum() {
 }
 
 # =============================================================================
+# CONFIGURATION MANAGEMENT
+# =============================================================================
+
+# Force ArgoCD to refresh and sync after app install
+refresh_argocd_application() {
+    print_status "Triggering ArgoCD refresh and sync..."
+    kubectl patch application initial-$CUSTOMER-app -n argocd \
+        -p '{"metadata": {"annotations": {"argocd.argoproj.io/refresh": "hard"}}}' \
+        --type merge || true
+    
+    # Wait until ArgoCD reconciles the app
+    kubectl wait --for=condition=Synced application/initial-$CUSTOMER-app \
+        -n argocd --timeout=180s || \
+        print_warning "ArgoCD app did not report Synced within timeout"
+    
+    kubectl wait --for=condition=Healthy application/initial-$CUSTOMER-app \
+        -n argocd --timeout=300s || \
+        print_warning "ArgoCD app did not report Healthy within timeout"
+    
+    print_success "ArgoCD application refreshed and synced"
+}
+
+# =============================================================================
 # CLI FLAG PARSING
 # =============================================================================
 
@@ -1035,6 +1058,7 @@ main() {
     helm_login
     configure_argocd_repositories
     deploy_argocd_application    
+    refresh_argocd_application
     display_final_info
 }
 
