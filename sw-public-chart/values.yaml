@@ -68,10 +68,8 @@ sw-private-chart:
     da:
       da_frontend_image: "/images/da-service/da-frontend"
       da_service_image: "/images/da-service/da-service"
-      da_version: "latest"
   financial-chart:
     namespace: "fc"
     fc:
       fc_frontend_image: "images/financial-close-service/financial-close-frontend"
       fc_service_image: "images/financial-close-service/financial-close-backend"
-      fc_version: "latest"
