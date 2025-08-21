@@ -7,6 +7,7 @@ global:
     username: "my-registry-user"
     password: "supersecurepassword"
     imagePullSecret: "registry-secret"
+  hosted: "auth"
     
 sw-private-chart:
   environment-chart:
