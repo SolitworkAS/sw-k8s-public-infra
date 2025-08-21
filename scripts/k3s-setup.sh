@@ -602,6 +602,7 @@ install_argocd() {
     sleep 60
     
     print_success "ArgoCD installed successfully"
+    configure_argocd_health_scripts
 }
 
 # Install K9s cluster management UI
