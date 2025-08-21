@@ -38,25 +38,6 @@ check_gum() {
 }
 
 # =============================================================================
-# CONFIGURATION MANAGEMENT
-# =============================================================================
-
-configure_argocd_health_scripts() {
-  print_status "Installing Argo CD health script for CloudNativePG Cluster..."
-  kubectl patch configmap argocd-cm -n argocd --type merge -p "$(cat <<'JSON'
-{
-  "data": {
-    "resource.customizations.health.postgresql.cnpg.io_Cluster": "hs = { status = \"Progressing\", message = \"\" }\n\nif obj.status ~= nil then\n  local phase = obj.status.phase\n  if phase == \"Healthy\" or phase == \"Cluster in healthy state\" then\n    hs.status = \"Healthy\"\n  elseif phase == \"Failed\" then\n    hs.status = \"Degraded\"\n  elseif (obj.status.instances ~= nil and obj.status.instances > 0) or (obj.status.currentPrimary ~= nil) then\n    -- Treat as healthy if pods/primary exist even without phase\n    hs.status = \"Healthy\"\n  else\n    hs.status = \"Progressing\"\n  end\n\n  if obj.status.phaseReason ~= nil then\n    hs.message = tostring(obj.status.phaseReason)\n  elseif obj.status.currentPrimary ~= nil then\n    hs.message = \"primary: \" .. tostring(obj.status.currentPrimary)\n  elseif phase ~= nil then\n    hs.message = \"phase: \" .. tostring(phase)\n  else\n    hs.message = \"Cluster is bootstrapping\"\n  end\nelse\n  hs.status = \"Progressing\"\n  hs.message = \"Cluster status not yet available\"\nend\n\nreturn hs\n"
-  }
-}
-JSON
-)"
-  kubectl rollout restart deploy/argocd-repo-server -n argocd || true
-  kubectl rollout restart sts/argocd-application-controller -n argocd || true
-  print_success "Health script configured"
-}
-
-# =============================================================================
 # CLI FLAG PARSING
 # =============================================================================
 
@@ -588,6 +569,7 @@ install_argocd() {
     
     helm upgrade --install argocd argo/argo-cd \
         --namespace argocd \
+        --version 8.2.7 \
         --set server.metrics.enabled=true \
         --set controller.metrics.enabled=true \
         --set repoServer.metrics.enabled=true \
@@ -599,7 +581,6 @@ install_argocd() {
     sleep 60
     
     print_success "ArgoCD installed successfully"
-    configure_argocd_health_scripts
 }
 
 # Install K9s cluster management UI
@@ -1053,9 +1034,7 @@ main() {
     
     helm_login
     configure_argocd_repositories
-    deploy_argocd_application
-    configure_argocd_health_scripts
-    
+    deploy_argocd_application    
     display_final_info
 }
 
