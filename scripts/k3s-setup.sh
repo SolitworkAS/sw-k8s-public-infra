@@ -47,7 +47,7 @@ configure_argocd_health_scripts() {
   kubectl patch configmap argocd-cm -n argocd --type merge -p "$(cat <<'JSON'
 {
   "data": {
-    "resource.customizations.health.postgresql.cnpg.io_Cluster": "hs = { status = \"Progressing\", message = \"\" }\n\nif obj.status ~= nil then\n  local phase = obj.status.phase\n  if phase == \"Healthy\" then\n    hs.status = \"Healthy\"\n  elseif phase == \"Failed\" then\n    hs.status = \"Degraded\"\n  else\n    hs.status = \"Progressing\"\n  end\n\n  if obj.status.phaseReason ~= nil then\n    hs.message = tostring(obj.status.phaseReason)\n  elseif obj.status.currentPrimary ~= nil then\n    hs.message = \"primary: \" .. tostring(obj.status.currentPrimary)\n  else\n    hs.message = \"phase: \" .. tostring(phase)\n  end\nelse\n  hs.status = \"Progressing\"\n  hs.message = \"Cluster status not yet available\"\nend\n\nreturn hs\n"
+    "resource.customizations.health.postgresql.cnpg.io_Cluster": "hs = { status = \"Progressing\", message = \"\" }\n\nif obj.status ~= nil then\n  local phase = obj.status.phase\n  if phase == \"Healthy\" or phase == \"Cluster in healthy state\" then\n    hs.status = \"Healthy\"\n  elseif phase == \"Failed\" then\n    hs.status = \"Degraded\"\n  elseif obj.status.instances ~= nil and obj.status.instances > 0 then\n    hs.status = \"Healthy\"\n  else\n    hs.status = \"Progressing\"\n  end\n\n  if obj.status.phaseReason ~= nil then\n    hs.message = tostring(obj.status.phaseReason)\n  elseif obj.status.currentPrimary ~= nil then\n    hs.message = \"primary: \" .. tostring(obj.status.currentPrimary)\n  else\n    hs.message = \"phase: \" .. tostring(phase)\n  end\nelse\n  hs.status = \"Progressing\"\n  hs.message = \"Cluster status not yet available\"\nend\n\nreturn hs\n"
   }
 }
 JSON
@@ -57,6 +57,7 @@ JSON
   kubectl rollout restart sts/argocd-application-controller -n argocd || true
   print_success "Health script configured"
 }
+
 
 
 # =============================================================================
