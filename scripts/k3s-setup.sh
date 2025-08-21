@@ -691,8 +691,8 @@ spec:
     helm:
       values: |
         global:
-          selfhosted: "$([ "$SELF_HOSTED" = "true" ] && echo "$CUSTOMER" || echo "")"
-          hosted: "$([ "$SELF_HOSTED" = "false" ] && echo "$CUSTOMER" || echo "")"
+          selfhosted: "$([ "$SELF_HOSTED" = "true" ] && echo "$CUSTOMER" || echo "auth")"
+          hosted: "$([ "$SELF_HOSTED" = "true" ] && echo "$CUSTOMER" || echo "auth")"
           domain: "$DOMAIN"
           publicIp: "$DETECTED_IP"
           container:
