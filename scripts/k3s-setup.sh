@@ -38,6 +38,27 @@ check_gum() {
 }
 
 # =============================================================================
+# CONFIGURATION MANAGEMENT
+# =============================================================================
+
+configure_argocd_health_scripts() {
+  print_status "Installing Argo CD health script for CloudNativePG Cluster..."
+  # Nil-safe health.lua for postgresql.cnpg.io/Cluster
+  kubectl patch configmap argocd-cm -n argocd --type merge -p "$(cat <<'JSON'
+{
+  "data": {
+    "resource.customizations.health.postgresql.cnpg.io_Cluster": "hs = { status = \"Progressing\", message = \"\" }\n\nif obj.status ~= nil then\n  local phase = obj.status.phase\n  if phase == \"Healthy\" then\n    hs.status = \"Healthy\"\n  elseif phase == \"Failed\" then\n    hs.status = \"Degraded\"\n  else\n    hs.status = \"Progressing\"\n  end\n\n  if obj.status.phaseReason ~= nil then\n    hs.message = tostring(obj.status.phaseReason)\n  elseif obj.status.currentPrimary ~= nil then\n    hs.message = \"primary: \" .. tostring(obj.status.currentPrimary)\n  else\n    hs.message = \"phase: \" .. tostring(phase)\n  end\nelse\n  hs.status = \"Progressing\"\n  hs.message = \"Cluster status not yet available\"\nend\n\nreturn hs\n"
+  }
+}
+JSON
+)"
+  # Argo CD components cache config; restart so the script is loaded
+  kubectl rollout restart deploy/argocd-repo-server -n argocd || true
+  kubectl rollout restart deploy/argocd-application-controller -n argocd || true
+  print_success "Health script configured"
+}
+
+# =============================================================================
 # CLI FLAG PARSING
 # =============================================================================
 
@@ -374,7 +395,8 @@ collect_user_input() {
     DEPLOY_DA_APP="true"
     DEPLOY_FC_APP=$(prompt_boolean "Deploy Financial Close application?" "false")
     
-    # OAuth/SSO configuration removed (handled via private chart defaults)
+    # OAuth/SSO configuration (only for hosted deployments)
+    # Dex configuration removed entirely; handled by private chart defaults
     
     # Intuit configuration (only for non-self-hosted)
     if [ "$SELF_HOSTED" = "true" ]; then
@@ -693,7 +715,6 @@ spec:
             encryptionKey: "$ENCRYPTION_KEY"
         sw-private-chart:
           environment-chart:
-            dex: {}
             namespace: "environment"
             domain: "$DOMAIN"
             minio:
@@ -768,6 +789,7 @@ update_argocd_application() {
     
     # Reapply the entire manifest from the script
     print_status "Reapplying ArgoCD application manifest..."
+
     kubectl apply -f - <<EOF
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -801,7 +823,6 @@ spec:
             encryptionKey: "$ENCRYPTION_KEY"
         sw-private-chart:
           environment-chart:
-            dex: {}
             namespace: "environment"
             domain: "$DOMAIN"
             minio:
@@ -1021,6 +1042,7 @@ main() {
     if [ "$ARGOCD_INSTALLED" != "true" ]; then
         install_argocd
     else
+        
         print_status "ArgoCD already installed, skipping..."
     fi
     
@@ -1033,6 +1055,7 @@ main() {
     helm_login
     configure_argocd_repositories
     deploy_argocd_application
+    configure_argocd_health_scripts
     
     display_final_info
 }
