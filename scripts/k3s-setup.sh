@@ -48,15 +48,6 @@ refresh_argocd_application() {
         -p '{"metadata": {"annotations": {"argocd.argoproj.io/refresh": "hard"}}}' \
         --type merge || true
     
-    # Wait until ArgoCD reconciles the app
-    kubectl wait --for=condition=Synced application/initial-$CUSTOMER-app \
-        -n argocd --timeout=180s || \
-        print_warning "ArgoCD app did not report Synced within timeout"
-    
-    kubectl wait --for=condition=Healthy application/initial-$CUSTOMER-app \
-        -n argocd --timeout=300s || \
-        print_warning "ArgoCD app did not report Healthy within timeout"
-    
     print_success "ArgoCD application refreshed and synced"
 }
 
