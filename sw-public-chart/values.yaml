@@ -8,17 +8,6 @@ global:
     username: "my-registry-user"
     password: "supersecurepassword"
     imagePullSecret: "registry-secret"
-  litellm:
-    postgres:
-      username: "postgres"
-      password: "postgres"
-    apiKeys:
-      azure: ""
-    masterKey: ""
-    azure:
-      apiBase: "https://swopenaidev.openai.azure.com/"
-      apiVersion: "2024-12-01-preview"
-      deployment: "gpt-4o"
     
 sw-private-chart:
   environment-chart:
@@ -50,7 +39,17 @@ sw-private-chart:
       server:
         service:
           type: NodePort  
-
+    litellm:
+      postgres:
+        username: "postgres"
+        password: "postgres"
+      apiKeys:
+        azure: ""
+      masterKey: ""
+      azure:
+        apiBase: "https://swopenaidev.openai.azure.com/"
+        apiVersion: "2024-12-01-preview"
+        deployment: "gpt-4o"
 
   customer-chart:
 
