@@ -2,6 +2,7 @@ global:
   selfhosted: "customera"
   domain: "afcdemo.com"
   publicIp: "public-ip"
+  auth_global_signing_key: ""
   container:
     registry: "swimagereg.azurecr.io"
     username: "my-registry-user"
@@ -39,6 +40,14 @@ sw-private-chart:
         service:
           type: NodePort  
 
+    litellm:
+      postgres:
+        username: "postgres"
+        password: "postgres"
+      apiKeys:
+        azure: ""
+      masterKey: ""
+
 
   customer-chart:
 
@@ -56,12 +65,20 @@ sw-private-chart:
       fcUser: "postgres"
       fcPassword: "postgres"
       fcDatabase: "postgres"
+      forecastUser: "postgres"
+      forecastPassword: "postgres"
+      forecastDatabase: "postgres"
     
     fc:
       enabled: false
 
     da:
       enabled: true
+
+    forecast:
+      enabled: false
+      auth:
+        jwtSigningKey: ""
 
   da-chart:
     namespace: "da"
@@ -74,3 +91,9 @@ sw-private-chart:
     fc:
       fc_frontend_image: "images/financial-close-service/financial-close-frontend"
       fc_service_image: "images/financial-close-service/financial-close-backend"
+
+  forecast-chart:
+    namespace: "forecast"
+    forecast:
+      forecast_frontend_image: "images/sw-forecast/sw-forecast-frontend"
+      forecast_service_image: "images/sw-forecast/sw-forecast-backend"

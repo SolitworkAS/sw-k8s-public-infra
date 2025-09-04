@@ -31,6 +31,9 @@ customer-chart:
     fcUser: "postgres"
     fcPassword: "postgres"
     fcDatabase: "postgres"
+    forecastUser: "postgres"
+    forecastPassword: "postgres"
+    forecastDatabase: "postgres"
 
   fc:
     enabled: false
@@ -38,3 +41,7 @@ customer-chart:
   da:
     enabled: true
 
+  forecast:
+    enabled: false
+    auth:
+      jwtSigningKey: ""
