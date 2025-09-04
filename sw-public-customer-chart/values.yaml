@@ -4,6 +4,7 @@ global:
     registry: "swimagereg.azurecr.io"
     username: "my-registry-user"
     password: "supersecurepassword"
+  deployForecastChart: "false"
   domain: "afcdemo.com"
   intuit:
     clientId: "1234567890"
