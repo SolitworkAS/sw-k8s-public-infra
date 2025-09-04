@@ -98,4 +98,4 @@ sw-private-chart:
     namespace: "forecast"
     forecast:
       forecast_frontend_image: "images/sw-forecast/sw-forecast-frontend"
-      forecast_service_image: "images/sw-forecast/sw-forecast-backend"
+      forecast_service_image: "images/sw-forecast/sw-forecast-service"
