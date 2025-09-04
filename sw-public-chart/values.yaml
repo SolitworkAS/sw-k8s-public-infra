@@ -2,6 +2,7 @@ global:
   selfhosted: "customera"
   domain: "afcdemo.com"
   publicIp: "public-ip"
+  auth_global_signing_key: ""
   container:
     registry: "swimagereg.azurecr.io"
     username: "my-registry-user"
@@ -38,7 +39,18 @@ sw-private-chart:
       server:
         service:
           type: NodePort  
+    litellm:
+      postgres:
+        username: "postgres"
+        password: "postgres"
 
+      apiKeys:
+        azure: ""
+      masterKey: ""
+      azure:
+        apiBase: "https://swopenaidev.openai.azure.com/"
+        apiVersion: "2024-12-01-preview"
+        deployment: "gpt-4o"
 
   customer-chart:
 
@@ -56,12 +68,20 @@ sw-private-chart:
       fcUser: "postgres"
       fcPassword: "postgres"
       fcDatabase: "postgres"
+      forecastUser: "postgres"
+      forecastPassword: "postgres"
+      forecastDatabase: "postgres"
     
     fc:
       enabled: false
 
     da:
       enabled: true
+
+    forecast:
+      enabled: false
+      auth:
+        jwtSigningKey: ""
 
   da-chart:
     namespace: "da"
