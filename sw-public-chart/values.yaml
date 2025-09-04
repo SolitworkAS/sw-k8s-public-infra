@@ -3,6 +3,7 @@ global:
   domain: "afcdemo.com"
   publicIp: "public-ip"
   auth_global_signing_key: ""
+  deployForecastChart: "false"
   container:
     registry: "swimagereg.azurecr.io"
     username: "my-registry-user"
