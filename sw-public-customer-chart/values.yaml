@@ -13,6 +13,8 @@ global:
 
 customer-chart: 
   namespace: "customera"
+  pbi:
+    workspaceId: ""
 
   appAdmin:
     email: "admin@example.com"
