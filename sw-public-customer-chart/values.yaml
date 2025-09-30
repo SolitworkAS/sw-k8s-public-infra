@@ -13,7 +13,8 @@ global:
 
 customer-chart: 
   namespace: "customera"
-
+  pbi:
+    workspaceId: ""
   appAdmin:
     email: "admin@example.com"
     firstName: "Admin"
@@ -34,6 +35,7 @@ customer-chart:
     forecastUser: "postgres"
     forecastPassword: "postgres"
     forecastDatabase: "postgres"
+ 
 
   fc:
     enabled: false
