@@ -8,6 +8,14 @@ global:
     username: "my-registry-user"
     password: "supersecurepassword"
     imagePullSecret: "registry-secret"
+  deployLitellm: false
+  deployFinancialChart: false
+  deployDaChart: true
+  deployForecastChart: false
+  pbi:
+    tenantId: ""
+    clientId: ""
+    clientSecret: ""
     
 sw-private-chart:
   environment-chart:
@@ -33,6 +41,9 @@ sw-private-chart:
     minio:
       bucket:
         name: argo-workflows  
+    garage:
+      adminKey: ""
+      rpcSecret: ""
 
     argo-workflows:
       namespaceOverride: "argo"  
@@ -43,7 +54,6 @@ sw-private-chart:
       postgres:
         username: "postgres"
         password: "postgres"
-
       apiKeys:
         azure: ""
       masterKey: ""
@@ -74,9 +84,13 @@ sw-private-chart:
     
     fc:
       enabled: false
+      auth:
+        jwtSigningKey: ""
 
     da:
       enabled: true
+      auth:
+        jwtSigningKey: ""
 
     forecast:
       enabled: false
@@ -95,3 +109,9 @@ sw-private-chart:
       fc_version: "2025.05.1"
       fc_frontend_image: "images/financial-close-service/financial-close-frontend"
       fc_service_image: "images/financial-close-service/financial-close-backend"
+  forecast-chart:
+    namespace: "forecast"
+    forecast:
+      forecast_frontend_image: "images/sw-forecast/sw-forecast-frontend"
+      forecast_service_image: "images/sw-forecast/sw-forecast-service"
+      forecast_version: "2025.10.2"
