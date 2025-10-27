@@ -42,8 +42,10 @@ sw-private-chart:
       bucket:
         name: argo-workflows  
     garage:
-      adminKey: ""
-      rpcSecret: ""
+      rpc:
+        secret:
+          create: true
+          value: ""
 
     argo-workflows:
       namespaceOverride: "argo"  
