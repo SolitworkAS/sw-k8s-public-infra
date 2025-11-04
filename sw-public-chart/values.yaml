@@ -11,6 +11,8 @@ global:
   deployLitellm: false
   deployFinancialChart: false
   deployDaChart: true
+  deployEsgChart: false
+  
   deployForecastChart: false
   pbi:
     tenantId: ""
