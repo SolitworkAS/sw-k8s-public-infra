@@ -32,10 +32,6 @@ sw-private-chart:
       client:
         secret: "supersecure"
 
-    minio:
-      bucket:
-        name: argo-workflows  
-
     argo-workflows:
       namespaceOverride: "argo"  
       server:
@@ -70,6 +66,9 @@ sw-private-chart:
       forecastUser: "postgres"
       forecastPassword: "postgres"
       forecastDatabase: "postgres"
+      esgUser: "postgres"
+      esgPassword: "postgres"
+      esgDatabase: "postgres"
     
     fc:
       enabled: false
@@ -81,6 +80,8 @@ sw-private-chart:
       enabled: false
       auth:
         jwtSigningKey: ""
+    esg:
+      enabled: false
 
   da-chart:
     namespace: "da"
@@ -98,3 +99,11 @@ sw-private-chart:
     forecast:
       forecast_frontend_image: "images/sw-forecast/sw-forecast-frontend"
       forecast_service_image: "images/sw-forecast/sw-forecast-service"
+  esg-chart:
+    namespace: "esg"
+    esg:
+      esg_service_image: "images/esg/esg"
+      ca_service_image: "images/esg/ca"
+      source_load_service_image: "images/esg/source-load"
+      external_endpoints_service_image: "images/esg/external_endpoints"
+      frontend_service_image: "images/esg/frontend-service"
