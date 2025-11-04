@@ -44,3 +44,5 @@ customer-chart:
       
   esg:
     enabled: false
+    auth:
+      jwtSigningKey: ""
