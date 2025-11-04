@@ -16,10 +16,6 @@ customer-chart:
     firstName: "Admin"
     lastName: "User"
 
-  minio:
-    rootUser: "minio"
-    rootPassword: "minio"
-
   postgres:
     username: "postgres"
     password: "postgres"
@@ -31,6 +27,9 @@ customer-chart:
     forecastUser: "postgres"
     forecastPassword: "postgres"
     forecastDatabase: "postgres"
+    esgUser: "postgres"
+    esgPassword: "postgres"
+    esgDatabase: "postgres"
 
   fc:
     enabled: false
@@ -42,4 +41,6 @@ customer-chart:
     enabled: false
     auth:
       jwtSigningKey: ""
-
+      
+  esg:
+    enabled: false
