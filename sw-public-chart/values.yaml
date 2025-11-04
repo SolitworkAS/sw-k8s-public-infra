@@ -130,5 +130,5 @@ sw-private-chart:
       ca_service_image: "images/esg/ca"
       source_load_service_image: "images/esg/source-load"
       external_endpoints_service_image: "images/esg/external_endpoints"
-      frontend_service_image: "images/esg/frontend-service"
+      frontend_service_image: "images/esg/frontend_service"
       esg_version: "latest"
