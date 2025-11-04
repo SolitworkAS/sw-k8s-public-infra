@@ -100,6 +100,8 @@ sw-private-chart:
         jwtSigningKey: ""
     esg:
       enabled: false
+      auth:
+        jwtSigningKey: ""
 
   da-chart:
     namespace: "da"
