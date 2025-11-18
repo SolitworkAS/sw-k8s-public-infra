@@ -85,6 +85,9 @@ sw-private-chart:
       esgUser: "postgres"
       esgPassword: "postgres"
       esgDatabase: "postgres"
+      gitbooksUser: "postgres"
+      gitbooksPassword: "postgres"
+      gitbooksDatabase: "postgres"
     
     fc:
       enabled: false
@@ -104,7 +107,10 @@ sw-private-chart:
       enabled: false
       auth:
         jwtSigningKey: ""
-
+    gitbooks:
+      enabled: false
+      auth:
+        jwtSigningKey: ""
   da-chart:
     namespace: "da"
     da:
@@ -132,3 +138,8 @@ sw-private-chart:
       external_endpoints_service_image: "images/esg/external_endpoints"
       frontend_service_image: "images/esg/frontend_service"
       esg_version: "latest"
+
+  gitbooks-chart:
+    namespace: "gitbooks"
+    gitbooks:
+      gitbooks_version: "latest"
