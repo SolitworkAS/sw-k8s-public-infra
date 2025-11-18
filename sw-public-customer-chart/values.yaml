@@ -30,6 +30,9 @@ customer-chart:
     esgUser: "postgres"
     esgPassword: "postgres"
     esgDatabase: "postgres"
+    gitbooksUser: "postgres"
+    gitbooksPassword: "postgres"
+    gitbooksDatabase: "postgres"
 
   fc:
     enabled: false
@@ -43,6 +46,10 @@ customer-chart:
       jwtSigningKey: ""
       
   esg:
+    enabled: false
+    auth:
+      jwtSigningKey: ""
+  gitbooks:
     enabled: false
     auth:
       jwtSigningKey: ""
