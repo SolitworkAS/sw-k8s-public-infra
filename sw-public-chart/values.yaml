@@ -70,7 +70,10 @@ sw-private-chart:
       forecastUser: "postgres"
       forecastPassword: "postgres"
       forecastDatabase: "postgres"
-    
+      gitbooksUser: "wefsdagjthg"
+      gitbooksPassword: "wdssdsghre"
+      gitbooksDatabase: "wdwwdwdwdcccxz"
+
     fc:
       enabled: false
 
@@ -78,6 +81,10 @@ sw-private-chart:
       enabled: true
     
     forecast:
+      enabled: false
+      auth:
+        jwtSigningKey: ""
+    gitbooks:
       enabled: false
       auth:
         jwtSigningKey: ""
@@ -94,3 +101,23 @@ sw-private-chart:
       fc_version: "test"
       fc_frontend_image: "images/financial-close-service/financial-close-frontend"
       fc_service_image: "images/financial-close-service/financial-close-backend"
+  forecast-chart:
+    namespace: "forecast"
+    forecast:
+      forecast_frontend_image: "images/sw-forecast/sw-forecast-frontend"
+      forecast_service_image: "images/sw-forecast/sw-forecast-service"
+      forecast_version: "2025.11.10"
+    
+  esg-chart:
+    namespace: "esg"
+    esg:
+      esg_service_image: "images/esg/esg"
+      ca_service_image: "images/esg/ca"
+      source_load_service_image: "images/esg/source_load"
+      external_endpoints_service_image: "images/esg/external_endpoints"
+      frontend_service_image: "images/esg/frontend_service"
+  gitbooks-chart:
+    namespace: "gitbooks"
+    gitbooks:
+      gitbookauth_frontend_image: "images/gitbookauth/gitbookauth-frontend"
+      gitbookauth_service_image: "images/gitbookauth/gitbookauth-service"
