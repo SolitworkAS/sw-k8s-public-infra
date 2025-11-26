@@ -11,6 +11,7 @@ global:
   deployLitellm: false
   deployFinancialChart: false
   deployDaChart: true
+  deployGitbooksChart: false
   deployEsgChart: false
   
   deployForecastChart: false
