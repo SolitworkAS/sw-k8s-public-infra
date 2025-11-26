@@ -117,5 +117,3 @@ sw-private-chart:
       frontend_service_image: "images/esg/frontend-service"
   gitbooks-chart:
     namespace: "gitbooks"
-    gitbooks:
-      gitbooks_version: "latest"
