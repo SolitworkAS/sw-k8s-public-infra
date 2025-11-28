@@ -115,8 +115,8 @@ sw-private-chart:
     esg:
       esg_service_image: "images/esg/esg"
       ca_service_image: "images/esg/ca"
-      source_load_service_image: "images/esg/source-load"
+      source_load_service_image: "images/esg/source_load"
       external_endpoints_service_image: "images/esg/external_endpoints"
-      frontend_service_image: "images/esg/frontend-service"
+      frontend_service_image: "images/esg/frontend_service"
   gitbooks-chart:
     namespace: "gitbooks"
