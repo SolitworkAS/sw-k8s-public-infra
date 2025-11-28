@@ -35,6 +35,9 @@ customer-chart:
     forecastUser: "postgres"
     forecastPassword: "postgres"
     forecastDatabase: "postgres"
+    esgUser: "postgres"
+    esgPassword: "postgres"
+    esgDatabase: "postgres"
     gitbooksUser: "postgres"
     gitbooksPassword: "postgres"
     gitbooksDatabase: "postgres"
@@ -50,6 +53,11 @@ customer-chart:
     auth:
       jwtSigningKey: ""
       
+  esg:
+    enabled: false
+    auth:
+      jwtSigningKey: ""
+
   gitbooks:
     enabled: false
     auth:
