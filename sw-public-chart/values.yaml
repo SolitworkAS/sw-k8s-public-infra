@@ -5,6 +5,7 @@ global:
   auth_global_signing_key: ""
   deployForecastChart: "false"
   deployLitellm: "false"
+  deployEsgChart: false
   deployGitbooksChart: false
   container:
     registry: "swimagereg.azurecr.io"
