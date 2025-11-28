@@ -3,6 +3,7 @@ global:
   domain: "afcdemo.com"
   publicIp: "public-ip"
   auth_global_signing_key: ""
+  deployEsgChart: false
   container:
     registry: "swimagereg.azurecr.io"
     username: "my-registry-user"
@@ -70,6 +71,9 @@ sw-private-chart:
       forecastUser: "postgres"
       forecastPassword: "postgres"
       forecastDatabase: "postgres"
+      esgUser: "postgres"
+      esgPassword: "postgres"
+      esgDatabase: "postgres"
       gitbooksUser: "wefsdagjthg"
       gitbooksPassword: "wdssdsghre"
       gitbooksDatabase: "wdwwdwdwdcccxz"
@@ -84,6 +88,12 @@ sw-private-chart:
       enabled: false
       auth:
         jwtSigningKey: ""
+        
+    esg:
+      enabled: false
+      auth:
+        jwtSigningKey: ""
+        
     gitbooks:
       enabled: false
       auth:
@@ -116,6 +126,7 @@ sw-private-chart:
       source_load_service_image: "images/esg/source_load"
       external_endpoints_service_image: "images/esg/external_endpoints"
       frontend_service_image: "images/esg/frontend_service"
+  
   gitbooks-chart:
     namespace: "gitbooks"
     gitbooks:
