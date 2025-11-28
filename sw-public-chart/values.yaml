@@ -87,6 +87,8 @@ sw-private-chart:
         jwtSigningKey: ""
     esg:
       enabled: false
+      auth:
+        jwtSigningKey: ""
     gitbooks:
       enabled: false
       auth:
