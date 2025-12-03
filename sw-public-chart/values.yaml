@@ -12,7 +12,7 @@ global:
   deployFinancialChart: false
   deployDaChart: true
   deployEsgChart: false
-  
+  deployWorkflowChart: false
   deployForecastChart: false
   pbi:
     tenantId: ""
@@ -88,7 +88,9 @@ sw-private-chart:
       gitbooksUser: "postgres"
       gitbooksPassword: "postgres"
       gitbooksDatabase: "postgres"
-    
+      workflowUser: "postgres"
+      workflowPassword: "postgres"
+      workflowDatabase: "postgres"
     fc:
       enabled: false
       auth:
@@ -143,3 +145,9 @@ sw-private-chart:
     namespace: "gitbooks"
     gitbooks:
       gitbooks_version: "latest"
+  workflow-chart:
+    namespace: "workflow"
+    workflow:
+      workflow_frontend_image: "images/sw-workflow/sw-workflow-frontend"
+      workflow_service_image: "images/sw-workflow/sw-workflow-service"
+      workflow_version: "latest"
