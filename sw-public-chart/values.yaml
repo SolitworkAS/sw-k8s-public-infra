@@ -78,6 +78,9 @@ sw-private-chart:
       gitbooksUser: "wefsdagjthg"
       gitbooksPassword: "wdssdsghre"
       gitbooksDatabase: "wdwwdwdwdcccxz"
+      workflowUser: "postgres"
+      workflowPassword: "postgres"
+      workflowDatabase: "postgres"
 
     fc:
       enabled: false
