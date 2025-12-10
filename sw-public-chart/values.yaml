@@ -4,6 +4,7 @@ global:
   publicIp: "public-ip"
   auth_global_signing_key: ""
   deployEsgChart: false
+  deployWorkflowChart: false
   container:
     registry: "swimagereg.azurecr.io"
     username: "my-registry-user"
@@ -99,6 +100,11 @@ sw-private-chart:
       auth:
         jwtSigningKey: ""
 
+    workflow:
+      enabled: false
+      auth:
+        jwtSigningKey: ""
+
   da-chart:
     namespace: "da"
     da:
@@ -132,3 +138,10 @@ sw-private-chart:
     gitbooks:
       gitbookauth_frontend_image: "images/gitbookauth/gitbookauth-frontend"
       gitbookauth_service_image: "images/gitbookauth/gitbookauth-service"
+  
+  workflow-chart:
+    namespace: "workflow"
+    workflow:
+      workflow_frontend_image: "images/sw-workflow/sw-workflow-frontend"
+      workflow_service_image: "images/sw-workflow/sw-workflow-service"
+      workflow_version: "latest"

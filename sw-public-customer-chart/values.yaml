@@ -42,7 +42,10 @@ customer-chart:
     gitbooksUser: "postgres"
     gitbooksPassword: "postgres"
     gitbooksDatabase: "postgres"
-  
+    workflowUser: "postgres"
+    workflowPassword: "postgres"
+    workflowDatabase: "postgres"
+
   fc:
     enabled: false
 
@@ -60,6 +63,11 @@ customer-chart:
       jwtSigningKey: ""
 
   gitbooks:
+    enabled: false
+    auth:
+      jwtSigningKey: ""
+
+  workflow:
     enabled: false
     auth:
       jwtSigningKey: ""
