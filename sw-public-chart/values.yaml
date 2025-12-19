@@ -95,6 +95,10 @@ sw-private-chart:
       enabled: false
       auth:
         jwtSigningKey: ""
+    workflow:
+      enabled: false
+      auth:
+        jwtSigningKey: ""
 
   da-chart:
     namespace: "da"
