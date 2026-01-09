@@ -14,6 +14,7 @@ global:
   deployEsgChart: false
   deployWorkflowChart: false
   deployForecastChart: false
+  deployVatChart: false
   pbi:
     tenantId: ""
     clientId: ""
@@ -91,6 +92,9 @@ sw-private-chart:
       workflowUser: "postgres"
       workflowPassword: "postgres"
       workflowDatabase: "postgres"
+      vatUser: "postgres"
+      vatPassword: "postgres"
+      vatDatabase: "postgres"
     fc:
       enabled: false
       auth:
@@ -114,6 +118,10 @@ sw-private-chart:
       auth:
         jwtSigningKey: ""
     workflow:
+      enabled: false
+      auth:
+        jwtSigningKey: ""
+    vat:
       enabled: false
       auth:
         jwtSigningKey: ""
@@ -155,3 +163,9 @@ sw-private-chart:
       workflow_frontend_image: "images/sw-workflow/sw-workflow-frontend"
       workflow_service_image: "images/sw-workflow/sw-workflow-service"
       workflow_version: "latest"
+  vat-chart:
+    namespace: "vat"
+    vat:
+      vat_version: "latest"
+      vat_frontend_image: "images/vat/vat-frontend"
+      vat_service_image: "images/vat/vat-service"
