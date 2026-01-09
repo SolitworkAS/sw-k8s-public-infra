@@ -8,6 +8,7 @@ global:
   deployEsgChart: false
   deployGitbooksChart: false
   deployWorkflowChart: false
+  deployVatChart: false
   container:
     registry: "swimagereg.azurecr.io"
     username: "my-registry-user"
@@ -78,6 +79,9 @@ sw-private-chart:
       workflowUser: "postgres"
       workflowPassword: "postgres"
       workflowDatabase: "postgres"
+      vatUser: "postgres"
+      vatPassword: "postgres"
+      vatDatabase: "postgres"
     fc:
       enabled: false
 
@@ -100,7 +104,10 @@ sw-private-chart:
       enabled: false
       auth:
         jwtSigningKey: ""
-
+    vat:
+      enabled: false
+      auth:
+        jwtSigningKey: ""
   da-chart:
     namespace: "da"
     da:
@@ -127,3 +134,8 @@ sw-private-chart:
       frontend_service_image: "images/esg/frontend_service"
   gitbooks-chart:
     namespace: "gitbooks"
+  vat-chart:
+    namespace: "vat"
+    vat:
+      vat_frontend_image: "images/vat/vat-frontend"
+      vat_service_image: "images/vat/vat-service"

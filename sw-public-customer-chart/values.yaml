@@ -41,6 +41,9 @@ customer-chart:
     gitbooksUser: "postgres"
     gitbooksPassword: "postgres"
     gitbooksDatabase: "postgres"
+    vatUser: "postgres"
+    vatPassword: "postgres"
+    vatDatabase: "postgres"
 
   fc:
     enabled: false
@@ -59,6 +62,10 @@ customer-chart:
       jwtSigningKey: ""
 
   gitbooks:
+    enabled: false
+    auth:
+      jwtSigningKey: ""
+  vat:
     enabled: false
     auth:
       jwtSigningKey: ""
