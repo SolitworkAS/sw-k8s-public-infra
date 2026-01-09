@@ -45,6 +45,9 @@ customer-chart:
     workflowUser: "postgres"
     workflowPassword: "postgres"
     workflowDatabase: "postgres"
+    vatUser: "postgres"
+    vatPassword: "postgres"
+    vatDatabase: "postgres"
 
   fc:
     enabled: false
@@ -68,6 +71,11 @@ customer-chart:
       jwtSigningKey: ""
 
   workflow:
+    enabled: false
+    auth:
+      jwtSigningKey: ""
+
+  vat:
     enabled: false
     auth:
       jwtSigningKey: ""
