@@ -15,6 +15,11 @@ global:
   deployWorkflowChart: false
   deployForecastChart: false
   deployVatChart: false
+  intuit:
+    clientId: ""
+    clientSecret: ""
+    redirectUri: ""
+    encryptionKey: "encryption-key"
   pbi:
     tenantId: ""
     clientId: ""
