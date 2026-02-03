@@ -5,6 +5,11 @@ global:
     username: "my-registry-user"
     password: "supersecurepassword"
   domain: "afcdemo.com"
+  intuit:
+    clientId: ""
+    clientSecret: ""
+    redirectUri: ""
+    encryptionKey: "encryption-key"
 
 customer-chart: 
   namespace: "customera"
