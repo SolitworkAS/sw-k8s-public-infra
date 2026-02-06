@@ -87,6 +87,8 @@ sw-private-chart:
 
     da:
       enabled: true
+      auth:
+        jwtSigningKey: ""
 
     forecast:
       enabled: false

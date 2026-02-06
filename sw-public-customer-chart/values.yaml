@@ -53,7 +53,9 @@ customer-chart:
 
   da:
     enabled: true
-
+    auth:
+      jwtSigningKey: ""
+      
   forecast:
     enabled: false
     auth:
