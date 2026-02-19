@@ -18,7 +18,7 @@ global:
 sw-private-chart:
   environment-chart:
     postgres:
-      storageSize: "10Gi"
+      storageSize: "100Gi"
     namespace: "environment"
     domain: "afcdemo.com"
 
