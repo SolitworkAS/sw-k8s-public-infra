@@ -19,6 +19,13 @@ sw-private-chart:
   environment-chart:
     postgres:
       storageSize: "100Gi"
+      resources:
+        requests:
+          memory: "16Gi"
+          cpu: "2"
+        limits:
+          memory: "16Gi"
+          cpu: "2"
     namespace: "environment"
     domain: "afcdemo.com"
 
