@@ -18,6 +18,7 @@ global:
 sw-private-chart:
   environment-chart:
     postgres:
+      instances: "1"
       storageSize: "100Gi"
       resources:
         requests:
