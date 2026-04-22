@@ -24,6 +24,10 @@ global:
     tenantId: ""
     clientId: ""
     clientSecret: ""
+  connectors:
+    azure:
+      connectionString: ""
+      container: ""
     
 sw-private-chart:
   environment-chart:
