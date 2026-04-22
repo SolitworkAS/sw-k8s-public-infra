@@ -14,7 +14,10 @@ global:
     username: "my-registry-user"
     password: "supersecurepassword"
     imagePullSecret: "registry-secret"
-    
+  connectors:
+    azure:
+      connectionString: ""
+      container: ""
 sw-private-chart:
   environment-chart:
     postgres:
