@@ -10,6 +10,6 @@ appVersion: "1.16.0"
 
 dependencies:
   - name: customer-chart
-    version: "0.1.1035"
+    version: "0.1.1036"
     repository: "oci://swimageregdev.azurecr.io/charts/customer-chart"
 
